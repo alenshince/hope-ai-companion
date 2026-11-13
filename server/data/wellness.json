@@ -1,0 +1,167 @@
+{
+  "date": "2026-11-13",
+  "waterGlasses": 6,
+  "targetWaterGlasses": 8,
+  "meals": {
+    "breakfast": {
+      "logged": true,
+      "time": "08:45 AM",
+      "note": "Oatmeal, fruits & nuts"
+    },
+    "lunch": {
+      "logged": true,
+      "time": "01:15 PM",
+      "note": "Balanced meal & veggies"
+    },
+    "dinner": {
+      "logged": false,
+      "time": null,
+      "note": ""
+    }
+  },
+  "workMinutes": 195,
+  "breaksTaken": 6,
+  "lastBreakAt": "2026-11-13T15:18:39.556Z",
+  "mood": {
+    "rating": "focused",
+    "label": "Focused & Energized",
+    "note": "Developing advanced modules for Hope AI",
+    "loggedAt": "2026-11-13T14:37:21.201Z"
+  },
+  "streakDays": 6,
+  "consistencyScore": 92,
+  "settings": {
+    "mealRemindersEnabled": true,
+    "hydrationRemindersEnabled": true,
+    "lateNightWarningEnabled": true,
+    "breakRemindersEnabled": true,
+    "targetWaterGlasses": 8,
+    "lunchStart": "12:30",
+    "lunchEnd": "14:30",
+    "dinnerStart": "19:30",
+    "dinnerEnd": "21:30",
+    "lateNightStart": "22:30"
+  },
+  "checkInLogs": [
+    {
+      "id": "check-1794583196700",
+      "type": "water",
+      "message": "Logged 1 glass(es) of water (6/8)",
+      "timestamp": "2026-11-13T15:19:56.700Z"
+    },
+    {
+      "id": "check-1794583119556",
+      "type": "break",
+      "message": "Took a refreshing break to stretch and rest eyes (20-20-20 rule)",
+      "timestamp": "2026-11-13T15:18:39.558Z"
+    },
+    {
+      "id": "check-1794582733311",
+      "type": "water",
+      "message": "Decreased water log to 5",
+      "timestamp": "2026-11-13T15:12:13.311Z"
+    },
+    {
+      "id": "check-1794582733306",
+      "type": "water",
+      "message": "Logged 1 glass(es) of water (6/8)",
+      "timestamp": "2026-11-13T15:12:13.306Z"
+    },
+    {
+      "id": "check-1794582733240",
+      "type": "break",
+      "message": "Took a refreshing break to stretch and rest eyes (20-20-20 rule)",
+      "timestamp": "2026-11-13T15:12:13.240Z"
+    },
+    {
+      "id": "check-1794582733236",
+      "type": "water",
+      "message": "Decreased water log to 5",
+      "timestamp": "2026-11-13T15:12:13.236Z"
+    },
+    {
+      "id": "check-1794582733231",
+      "type": "water",
+      "message": "Logged 1 glass(es) of water (6/8)",
+      "timestamp": "2026-11-13T15:12:13.231Z"
+    },
+    {
+      "id": "check-1794582183440",
+      "type": "water",
+      "message": "Decreased water log to 5",
+      "timestamp": "2026-11-13T15:03:03.440Z"
+    },
+    {
+      "id": "check-1794582183437",
+      "type": "water",
+      "message": "Logged 1 glass(es) of water (6/8)",
+      "timestamp": "2026-11-13T15:03:03.437Z"
+    },
+    {
+      "id": "check-1794582183374",
+      "type": "break",
+      "message": "Took a refreshing break to stretch and rest eyes (20-20-20 rule)",
+      "timestamp": "2026-11-13T15:03:03.374Z"
+    },
+    {
+      "id": "check-1794582183369",
+      "type": "water",
+      "message": "Decreased water log to 5",
+      "timestamp": "2026-11-13T15:03:03.369Z"
+    },
+    {
+      "id": "check-1794582183364",
+      "type": "water",
+      "message": "Logged 1 glass(es) of water (6/8)",
+      "timestamp": "2026-11-13T15:03:03.364Z"
+    },
+    {
+      "id": "check-1794582085036",
+      "type": "water",
+      "message": "Decreased water log to 5",
+      "timestamp": "2026-11-13T15:01:25.036Z"
+    },
+    {
+      "id": "check-1794582085026",
+      "type": "water",
+      "message": "Logged 1 glass(es) of water (6/8)",
+      "timestamp": "2026-11-13T15:01:25.026Z"
+    },
+    {
+      "id": "check-1794582084903",
+      "type": "break",
+      "message": "Took a refreshing break to stretch and rest eyes (20-20-20 rule)",
+      "timestamp": "2026-11-13T15:01:24.903Z"
+    },
+    {
+      "id": "check-1794582084896",
+      "type": "water",
+      "message": "Decreased water log to 5",
+      "timestamp": "2026-11-13T15:01:24.896Z"
+    },
+    {
+      "id": "check-1794582084890",
+      "type": "water",
+      "message": "Logged 1 glass(es) of water (6/8)",
+      "timestamp": "2026-11-13T15:01:24.891Z"
+    },
+    {
+      "id": "check-1794580650680",
+      "type": "water",
+      "message": "Decreased water log to 5",
+      "timestamp": "2026-11-13T14:37:30.680Z"
+    },
+    {
+      "id": "check-1794580650674",
+      "type": "water",
+      "message": "Logged 1 glass(es) of water (6/8)",
+      "timestamp": "2026-11-13T14:37:30.674Z"
+    },
+    {
+      "id": "check-01",
+      "type": "hydration",
+      "message": "Hydration check: You had 5 glasses so far. 3 more to reach your daily goal.",
+      "timestamp": "2026-11-13T12:37:21.201Z"
+    }
+  ]
+}

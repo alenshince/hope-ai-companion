@@ -1,0 +1,136 @@
+{
+  "id": "user-alen-shince",
+  "name": "Alen Shince",
+  "title": "S5 CSE Student • Creative Developer • UI/UX Designer",
+  "institution": "Mar Baselios Christian College of Engineering and Technology (MBCCET), Peermade",
+  "branch": "Computer Science & Engineering",
+  "semester": "Semester 5 (S5)",
+  "bio": "S5 CSE student at MBCCET with a passion for human-centered digital experiences, blending creative direction with full-stack and mobile craftsmanship. Leading creative initiatives and major hackathons at HIVE.",
+  "techStack": [
+    {
+      "category": "Design & Prototyping",
+      "items": [
+        "Figma",
+        "UI/UX Design",
+        "Graphic Design",
+        "Design Systems",
+        "Wireframing"
+      ]
+    },
+    {
+      "category": "Mobile & Frontend",
+      "items": [
+        "Flutter",
+        "Dart",
+        "React.js",
+        "Tailwind CSS",
+        "Progressive Web Apps (PWA)"
+      ]
+    },
+    {
+      "category": "Backend & Systems",
+      "items": [
+        "Python",
+        "Java",
+        "Node.js",
+        "REST APIs",
+        "Firebase"
+      ]
+    },
+    {
+      "category": "DevOps & Tools",
+      "items": [
+        "Git",
+        "GitHub",
+        "VS Code",
+        "Android Studio",
+        "Vite"
+      ]
+    }
+  ],
+  "leadership": [
+    {
+      "role": "Creative Team Lead & Event Coordinator",
+      "organization": "HIVE (MBCCET CSE Department / Technical Club)",
+      "period": "2025 - Present",
+      "description": "Heads creative direction, visual branding, stage design, and technical logistics for all flagship college events.",
+      "highlights": [
+        "Coordinated \"Hack Till Dawn\" — a marquee 24-hour overnight hackathon bringing together student innovators.",
+        "Organized the internal collegiate rounds for Smart India Hackathon (SIH), mentoring participating teams.",
+        "Spearheaded hands-on workshops in UI/UX design, Figma workflows, and mobile application fundamentals."
+      ]
+    }
+  ],
+  "projects": [
+    {
+      "id": "proj-nerreksha",
+      "name": "NerReksha",
+      "tagline": "Offline-First Disaster Resilience & Emergency PWA",
+      "category": "PWA / Emergency Tech",
+      "description": "An offline-first progressive web application engineered for critical crisis coordination, disaster resilience, peer emergency beacons, and offline emergency guidance when connectivity fails.",
+      "tech": [
+        "PWA",
+        "JavaScript",
+        "IndexedDB",
+        "Service Workers",
+        "UI/UX"
+      ],
+      "links": {
+        "github": "https://github.com/alenshince"
+      },
+      "status": "Active"
+    },
+    {
+      "id": "proj-rock",
+      "name": "Rock",
+      "tagline": "Voice-Enabled Personal AI Companion",
+      "category": "AI / Voice Assistant",
+      "description": "An intelligent voice-interactive personal assistant delivering hands-free conversational computing, rapid query handling, and multimodal automation.",
+      "tech": [
+        "Python",
+        "Speech Recognition",
+        "NLP",
+        "TTS",
+        "REST APIs"
+      ],
+      "links": {
+        "github": "https://github.com/alenshince"
+      },
+      "status": "Active"
+    },
+    {
+      "id": "proj-hive-design",
+      "name": "HIVE Visual Identity & Hackathon Portals",
+      "tagline": "Comprehensive Event Branding, Portals & Design Systems",
+      "category": "UI/UX & Graphic Design",
+      "description": "Design architecture and interactive web portals for Hack Till Dawn and SIH collegiate showcases, establishing high-aesthetic standards for tech events.",
+      "tech": [
+        "Figma",
+        "Graphic Design",
+        "React",
+        "Tailwind CSS"
+      ],
+      "links": {
+        "github": "https://github.com/alenshince"
+      },
+      "status": "Active"
+    }
+  ],
+  "links": {
+    "github": "https://github.com/alenshince",
+    "linkedin": "https://linkedin.com/in/alenshince",
+    "portfolio": "https://github.com/alenshince"
+  },
+  "preferences": {
+    "theme": "calm-light",
+    "tone": "intellectual, warm, encouraging, and clear",
+    "primaryLanguages": [
+      "Flutter/Dart",
+      "Python",
+      "Java",
+      "JavaScript"
+    ],
+    "designTool": "Figma"
+  },
+  "updatedAt": "2026-11-13T14:37:21.201Z"
+}

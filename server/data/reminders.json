@@ -1,0 +1,12 @@
+[
+  {
+    "id": "rem-03",
+    "title": "Drink a glass of water and stretch",
+    "dueAt": "2026-11-13T12:57:40.251Z",
+    "priority": "low",
+    "status": "completed",
+    "category": "Wellness",
+    "notified": true,
+    "createdAt": "2026-11-13T11:57:40.251Z"
+  }
+]

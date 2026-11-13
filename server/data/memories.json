@@ -1,0 +1,108 @@
+[
+  {
+    "id": "mem-01",
+    "category": "identity",
+    "title": "Academic Background",
+    "content": "Alen Shince is currently in Semester 5 (S5) pursuing Computer Science & Engineering at Mar Baselios Christian College of Engineering and Technology (MBCCET), Peermade.",
+    "tags": [
+      "education",
+      "mbccet",
+      "s5-cse",
+      "alen-shince"
+    ],
+    "importance": "critical",
+    "isActive": true,
+    "createdAt": "2026-11-13T14:37:21.201Z"
+  },
+  {
+    "id": "mem-02",
+    "category": "tech_stack",
+    "title": "Core Technical Expertise",
+    "content": "Alen specializes in Figma, Flutter, Java, Python, UI/UX design, and graphic design. He bridges creative aesthetics with robust software engineering.",
+    "tags": [
+      "figma",
+      "flutter",
+      "java",
+      "python",
+      "ui-ux",
+      "graphic-design"
+    ],
+    "importance": "critical",
+    "isActive": true,
+    "createdAt": "2026-11-13T14:37:21.201Z"
+  },
+  {
+    "id": "mem-03",
+    "category": "leadership",
+    "title": "HIVE Creative Lead & Hackathons",
+    "content": "Alen serves as the Creative Team Lead & Event Coordinator at HIVE. He coordinated major collegiate events including the 24-hour \"Hack Till Dawn\" hackathon and SIH (Smart India Hackathon) internal rounds.",
+    "tags": [
+      "hive",
+      "hack-till-dawn",
+      "sih",
+      "event-coordinator",
+      "leadership"
+    ],
+    "importance": "critical",
+    "isActive": true,
+    "createdAt": "2026-11-13T14:37:21.201Z"
+  },
+  {
+    "id": "mem-04",
+    "category": "projects",
+    "title": "Project: NerReksha (Offline-first PWA)",
+    "content": "NerReksha is an offline-first PWA designed for disaster resilience and offline emergency management. Built with service workers, local storage caching, and empathetic UI/UX for high-stress situations.",
+    "tags": [
+      "nerreksha",
+      "pwa",
+      "offline-first",
+      "disaster-tech"
+    ],
+    "importance": "high",
+    "isActive": true,
+    "createdAt": "2026-11-13T14:37:21.201Z"
+  },
+  {
+    "id": "mem-05",
+    "category": "projects",
+    "title": "Project: Rock (Voice AI Companion)",
+    "content": "Rock is a voice-enabled personal AI companion created by Alen, implementing speech recognition, natural language interaction, and rapid hands-free tasks.",
+    "tags": [
+      "rock",
+      "voice-assistant",
+      "ai-companion",
+      "python"
+    ],
+    "importance": "high",
+    "isActive": true,
+    "createdAt": "2026-11-13T14:37:21.201Z"
+  },
+  {
+    "id": "mem-06",
+    "category": "profiles",
+    "title": "Professional Profiles & GitHub",
+    "content": "Alen's official GitHub is https://github.com/alenshince and his LinkedIn profile reflects his work across creative design, Flutter engineering, and Python systems.",
+    "tags": [
+      "github",
+      "linkedin",
+      "links"
+    ],
+    "importance": "high",
+    "isActive": true,
+    "createdAt": "2026-11-13T14:37:21.201Z"
+  },
+  {
+    "id": "mem-07",
+    "category": "design",
+    "title": "UI/UX & Aesthetic Philosophy",
+    "content": "Alen champions minimalist, human-friendly interface design, purposeful typography, and seamless micro-interactions in all digital products.",
+    "tags": [
+      "ui-ux",
+      "design-philosophy",
+      "figma"
+    ],
+    "importance": "medium",
+    "isActive": true,
+    "createdAt": "2026-11-13T14:37:21.201Z"
+  }
+]

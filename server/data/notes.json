@@ -1,0 +1,38 @@
+[
+  {
+    "id": "note-welcome-01",
+    "title": "Welcome to Hope – Your Calming AI Companion",
+    "folder": "Daily Notes",
+    "tags": [
+      "welcome",
+      "guide",
+      "ai-companion",
+      "research",
+      "concepts",
+      "your",
+      "hope"
+    ],
+    "isPinned": true,
+    "content": "# Welcome to Hope 🌿\n\n## Overview\nSynthesized and refined thought stream captured on Friday, Nov 13, 2026.\n\n## Core Concepts & Notes\n- Hello! I am **Hope**, your personal AI companion designed to help you synthesize deep research, organize clear thoughts, and stay seamlessly on top of your day.\n---\n- ### What We Can Do Together\n1. **In-Depth Research Assistant**\n- Ask complex questions in the **Research** tab.\n- I will browse and scrape real-time information, synthesize findings with structured summaries, and cite authentic sources with clickable links.\n- Click the **\"One-Click to Notes\"** button below any research answer to immediately archive it into your notebooks.\n2. **Smart Note-Taking & Brain Dumps**\n- Write cleanly in Markdown with syntax highlighting and rich lists.\n- Use the **✨ AI Clean Up** button to let me transform messy bullet points into polished, executive-ready prose.\n- Use **🏷️ Auto-Tags** to extract relevant concepts automatically.\n3. **Natural Language Reminders**\n- Type naturally in the Reminders bar:\n- > *\"Remind me to review research on quantum computing tomorrow at 5 PM\"*\n- > *\"Call Sarah in 2 hours\"*\n- I will parse the exact time, priority, and topic without you fiddling with dropdown pickers!\n---\n*Take a deep breath. Let's build something wonderful today.*\n\n## Next Action Items\n- [ ] Review key concepts and connect with existing knowledge base\n- [ ] Identify immediate follow-up milestones\n",
+    "summary": "Welcome to Hope 🌿 Overview Synthesized and refined thought stream captured on Friday, Nov 13, 2026. Core Concepts & Notes Hello!",
+    "createdAt": "2026-11-13T11:47:00.349Z",
+    "updatedAt": "2026-11-13T14:16:07.248Z",
+    "sources": []
+  },
+  {
+    "id": "note-quantum-02",
+    "title": "Quantum Computing Horizons: Fault-Tolerant Architectures (2026)",
+    "folder": "Research",
+    "tags": [
+      "research",
+      "quantum",
+      "physics",
+      "deep-tech"
+    ],
+    "isPinned": false,
+    "content": "# Quantum Computing Horizons: Fault-Tolerant Architectures\n\n## Executive Summary\nRecent developments in quantum error correction (QEC) have moved the industry from noisy intermediate-scale quantum (NISQ) systems toward early logical qubit architectures. Key breakthroughs center on neutral atom arrays and superconducting surface codes.\n\n## Key Insights\n- **Logical Qubit Scaling**: Demonstration of 100+ error-corrected logical qubits operating with below-threshold physical error rates.\n- **Topological & Surface Codes**: Reduced overhead in lattice surgery allows complex quantum algorithms to run with high fidelity.\n- **Neutral Atom Momentum**: Laser-trapped neutral atom platforms offer all-to-all connectivity with reconfigurable optical tweezers.\n\n## Research Citations & References\n- [[1] Nature Quantum: Advances in Fault-Tolerant Logical Qubits](https://www.nature.com)\n- [[2] MIT Technology Review: The Commercial Race for Error-Free Quantum Computing](https://www.technologyreview.com)\n- [[3] Quanta Magazine: Inside Neutral Atom Quantum Processors](https://www.quantamagazine.org)\n\n*Synthesized with Hope AI Research Assistant*",
+    "summary": "Overview of modern fault-tolerant quantum computing advances, emphasizing neutral atom arrays, surface codes, and logical qubit scaling.",
+    "createdAt": "2026-11-12T13:47:00.350Z",
+    "updatedAt": "2026-11-13T01:47:00.350Z"
+  }
+]

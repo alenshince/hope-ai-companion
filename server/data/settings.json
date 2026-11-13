@@ -1,0 +1,7 @@
+{
+  "geminiApiKey": "",
+  "model": "gemini-1.5-pro",
+  "useWebSearch": true,
+  "soundEnabled": true,
+  "notificationsEnabled": true
+}

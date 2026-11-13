@@ -1,0 +1,80 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-800;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+}
+
+/* Custom Soft Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.4);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.6);
+}
+
+/* Markdown Rendering Helpers */
+.prose-hope h1 {
+  @apply text-2xl font-bold text-slate-900 mt-5 mb-3 tracking-tight;
+}
+.prose-hope h2 {
+  @apply text-xl font-semibold text-slate-800 mt-4 mb-2 tracking-tight;
+}
+.prose-hope h3 {
+  @apply text-lg font-semibold text-slate-800 mt-3 mb-2;
+}
+.prose-hope h4 {
+  @apply text-base font-semibold text-slate-700 mt-2 mb-1;
+}
+.prose-hope p {
+  @apply text-slate-700 leading-relaxed mb-3;
+}
+.prose-hope ul {
+  @apply list-disc list-inside space-y-1.5 mb-3 text-slate-700;
+}
+.prose-hope ol {
+  @apply list-decimal list-inside space-y-1.5 mb-3 text-slate-700;
+}
+.prose-hope li {
+  @apply leading-relaxed;
+}
+.prose-hope code {
+  @apply bg-slate-100 text-slate-800 text-xs px-1.5 py-0.5 rounded font-mono border border-slate-200;
+}
+.prose-hope pre {
+  @apply bg-slate-900 text-slate-100 p-4 rounded-xl text-xs font-mono my-3 overflow-x-auto shadow-inner;
+}
+.prose-hope pre code {
+  @apply bg-transparent text-slate-100 p-0 border-none;
+}
+.prose-hope blockquote {
+  @apply border-l-4 border-hope-400 pl-4 py-1 my-3 italic text-slate-600 bg-hope-50/40 rounded-r-lg;
+}
+.prose-hope a {
+  @apply text-hope-600 hover:text-hope-700 underline font-medium transition-colors;
+}
+.prose-hope hr {
+  @apply my-4 border-slate-200;
+}
+.prose-hope table {
+  @apply w-full text-sm text-left my-3 border border-slate-200 rounded-lg overflow-hidden;
+}
+.prose-hope th {
+  @apply bg-slate-100 px-3 py-2 font-semibold text-slate-700 border-b border-slate-200;
+}
+.prose-hope td {
+  @apply px-3 py-2 border-b border-slate-100 text-slate-600;
+}
+
