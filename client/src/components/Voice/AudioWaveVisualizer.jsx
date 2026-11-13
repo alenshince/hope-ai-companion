@@ -8,9 +8,12 @@ import React, { useEffect, useRef } from 'react';
 export default function AudioWaveVisualizer({
   state = 'idle', // 'idle' | 'listening' | 'processing' | 'speaking'
   size = 'md',    // 'sm' | 'md' | 'lg'
+  liveLevel = 0,  // 0 - 100 live microphone volume level
   className = ''
 }) {
   const canvasRef = useRef(null);
+  const liveLevelRef = useRef(liveLevel);
+  liveLevelRef.current = liveLevel;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -48,12 +51,14 @@ export default function AudioWaveVisualizer({
       let primaryColor, secondaryColor, amplitude, frequency, speed;
 
       if (state === 'listening') {
-        // Crisp teal/cyan waves responding to human speech
-        primaryColor = 'rgba(14, 165, 233, 0.85)';
+        // Crisp teal/cyan waves responding to human speech & live mic volume
+        primaryColor = 'rgba(14, 165, 233, 0.9)';
         secondaryColor = 'rgba(56, 189, 248, 0.45)';
-        amplitude = height * 0.38;
-        frequency = 0.045;
-        speed = 0.08;
+        const currentLevel = liveLevelRef.current || 0;
+        const volumeFactor = Math.min(1.5, Math.max(0.3, currentLevel / 35));
+        amplitude = height * 0.35 * volumeFactor;
+        frequency = 0.045 + (currentLevel / 1000);
+        speed = 0.08 + (currentLevel / 800);
       } else if (state === 'speaking') {
         // Harmonic indigo/purple waves representing Hope's voice
         primaryColor = 'rgba(99, 102, 241, 0.9)';

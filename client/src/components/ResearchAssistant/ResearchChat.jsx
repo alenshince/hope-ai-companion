@@ -27,6 +27,7 @@ import { playSuccessDing } from '../../utils/audio';
 import {
   isSpeechRecognitionSupported,
   isSpeechSynthesisSupported,
+  requestMicrophoneAccess,
   createSpeechRecognizer,
   speakText,
   stopSpeaking
@@ -86,10 +87,11 @@ What would you like to research today?`,
     "Quantum computing fault tolerance and error correction"
   ];
 
-  const handleToggleVoiceInput = () => {
+  const handleToggleVoiceInput = async () => {
     if (isListening) {
       if (recognizerRef.current) {
-        recognizerRef.current.abort();
+        recognizerRef.current.forceSubmit();
+        recognizerRef.current.stop();
         recognizerRef.current = null;
       }
       setIsListening(false);
@@ -97,35 +99,55 @@ What would you like to research today?`,
     }
 
     if (!isSpeechRecognitionSupported()) {
-      if (addToast) addToast({ type: 'error', title: 'Voice Input', message: 'Speech recognition is not supported in this browser.' });
+      if (addToast) addToast({
+        type: 'error',
+        title: 'Voice Input',
+        message: 'Speech recognition is not supported in this browser. Please use Chrome or Edge.'
+      });
       return;
     }
 
     try {
+      // Explicitly request microphone stream so browser shows permission prompt
+      await requestMicrophoneAccess();
+
       const recognizer = createSpeechRecognizer({
-        continuous: false,
+        continuous: true,
         interimResults: true,
+        silenceTimeoutMs: 1800,
         onStart: () => setIsListening(true),
         onResult: ({ final, interim }) => {
-          if (final) {
-            setInput(final);
+          setInput((final + ' ' + interim).trim());
+        },
+        onSpeechComplete: (completeText) => {
+          if (completeText && completeText.trim()) {
+            setInput(completeText.trim());
             setIsListening(false);
-            handleSend(final);
-          } else if (interim) {
-            setInput(interim);
+            handleSend(completeText.trim());
           }
         },
         onError: (err) => {
           console.warn('Voice input error:', err);
           setIsListening(false);
+          if (addToast) addToast({
+            type: 'error',
+            title: 'Microphone Error',
+            message: err.friendlyMessage || err.message || 'Could not capture microphone.'
+          });
         },
         onEnd: () => setIsListening(false)
       });
+
       recognizerRef.current = recognizer;
       recognizer.start();
     } catch (err) {
       console.warn('Failed to start speech recognition:', err);
       setIsListening(false);
+      if (addToast) addToast({
+        type: 'error',
+        title: 'Microphone Access',
+        message: err.message || 'Microphone access was denied.'
+      });
     }
   };
 

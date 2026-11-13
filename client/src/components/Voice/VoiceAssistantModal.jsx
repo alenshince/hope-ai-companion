@@ -14,12 +14,17 @@ import {
   FileText,
   Activity,
   User,
-  Radio
+  Radio,
+  Send,
+  AlertTriangle,
+  HelpCircle
 } from 'lucide-react';
 import AudioWaveVisualizer from './AudioWaveVisualizer';
 import {
   isSpeechRecognitionSupported,
   isSpeechSynthesisSupported,
+  requestMicrophoneAccess,
+  createAudioLevelMeter,
   createSpeechRecognizer,
   speakText,
   stopSpeaking
@@ -41,8 +46,12 @@ export default function VoiceAssistantModal({
   const [handsFreeMode, setHandsFreeMode] = useState(true);
   const [autoSpeak, setAutoSpeak] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
+  const [liveLevel, setLiveLevel] = useState(0);
+  const [hasMicPermission, setHasMicPermission] = useState(null);
 
   const recognizerRef = useRef(null);
+  const micStreamRef = useRef(null);
+  const audioMeterRef = useRef(null);
   const isListeningRef = useRef(false);
   const handsFreeRef = useRef(handsFreeMode);
   handsFreeRef.current = handsFreeMode;
@@ -58,11 +67,7 @@ export default function VoiceAssistantModal({
       setTranscript('');
       setInterimText('');
       setErrorMessage('');
-    } else {
-      // Auto-start listening on open if supported
-      if (isSpeechRecognitionSupported()) {
-        handleStartListening();
-      }
+      setLiveLevel(0);
     }
     return () => {
       handleStopListening();
@@ -70,55 +75,61 @@ export default function VoiceAssistantModal({
     };
   }, [isOpen]);
 
-  const handleStartListening = () => {
+  const handleStartListening = async () => {
     stopSpeaking();
     setErrorMessage('');
+    setTranscript('');
+    setInterimText('');
+
     if (!isSpeechRecognitionSupported()) {
-      setErrorMessage('Speech Recognition is not supported by your current browser.');
+      setErrorMessage(
+        'Speech Recognition is not supported by your current browser. For native voice recognition, please open Hope in Google Chrome or Microsoft Edge.'
+      );
       return;
     }
 
     try {
+      // Step 1: Explicitly request browser microphone access
+      // This forces the browser to prompt the user and verifies mic hardware
+      const stream = await requestMicrophoneAccess();
+      micStreamRef.current = stream;
+      setHasMicPermission(true);
+
+      // Step 2: Connect real-time audio analyser to mic stream
+      if (audioMeterRef.current) {
+        audioMeterRef.current.disconnect();
+      }
+      audioMeterRef.current = createAudioLevelMeter(stream, (level) => {
+        setLiveLevel(level);
+      });
+
+      // Step 3: Initialize Speech Recognizer with continuous listening & silence finalization
       if (recognizerRef.current) {
         recognizerRef.current.abort();
       }
 
       const recognizer = createSpeechRecognizer({
-        continuous: false,
+        continuous: true,
         interimResults: true,
+        silenceTimeoutMs: 1800,
         onStart: () => {
           isListeningRef.current = true;
           setVoiceState('listening');
-          setInterimText('');
         },
-        onResult: ({ final, interim, full }) => {
+        onResult: ({ final, interim }) => {
+          setTranscript(final);
           setInterimText(interim);
-          if (final) {
-            setTranscript(final);
-            setInterimText('');
-            // Process finalized voice command
-            handleProcessCommand(final);
+        },
+        onSpeechComplete: (finalSpokenText) => {
+          if (finalSpokenText && finalSpokenText.trim()) {
+            handleProcessCommand(finalSpokenText.trim());
           }
         },
-        onError: (e) => {
-          console.warn('Voice recognition error:', e.error);
+        onError: (err) => {
+          console.warn('Voice recognition error:', err);
           isListeningRef.current = false;
-          if (e.error === 'not-allowed') {
-            setErrorMessage('Microphone access was denied. Please allow microphone permissions.');
-            setVoiceState('idle');
-          } else if (e.error === 'no-speech') {
-            // User paused without speaking; if hands-free, try listening again
-            if (handsFreeRef.current && isOpen) {
-              setVoiceState('idle');
-              setTimeout(() => {
-                if (isOpen && !isListeningRef.current) handleStartListening();
-              }, 1200);
-            } else {
-              setVoiceState('idle');
-            }
-          } else {
-            setVoiceState('idle');
-          }
+          setVoiceState('idle');
+          setErrorMessage(err.friendlyMessage || 'Microphone error occurred.');
         },
         onEnd: () => {
           isListeningRef.current = false;
@@ -131,22 +142,31 @@ export default function VoiceAssistantModal({
       recognizerRef.current = recognizer;
       recognizer.start();
     } catch (err) {
-      console.warn('Failed to start speech recognition:', err);
-      setErrorMessage(err.message);
+      console.warn('Microphone start error:', err);
+      setHasMicPermission(false);
+      setErrorMessage(err.message || 'Could not access microphone.');
       setVoiceState('idle');
     }
   };
 
   const handleStopListening = () => {
     if (recognizerRef.current) {
-      try {
-        recognizerRef.current.abort();
-      } catch {
-        // ignore
-      }
+      recognizerRef.current.stop();
       recognizerRef.current = null;
     }
+
+    if (audioMeterRef.current) {
+      audioMeterRef.current.disconnect();
+      audioMeterRef.current = null;
+    }
+
+    if (micStreamRef.current) {
+      micStreamRef.current.getTracks().forEach((t) => t.stop());
+      micStreamRef.current = null;
+    }
+
     isListeningRef.current = false;
+    setLiveLevel(0);
     if (voiceState === 'listening') {
       setVoiceState('idle');
     }
@@ -200,6 +220,13 @@ export default function VoiceAssistantModal({
     }
   };
 
+  const handleManualSubmit = () => {
+    const fullText = (transcript + ' ' + interimText).trim();
+    if (fullText) {
+      handleProcessCommand(fullText);
+    }
+  };
+
   const handleQuickPrompt = (promptText) => {
     setTranscript(promptText);
     handleProcessCommand(promptText);
@@ -216,9 +243,11 @@ export default function VoiceAssistantModal({
 
   if (!isOpen) return null;
 
+  const currentDisplaySpeech = (transcript + ' ' + interimText).trim();
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn select-none">
-      <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 w-full max-w-xl overflow-hidden flex flex-col max-h-[90vh]">
+      <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 w-full max-w-xl overflow-hidden flex flex-col max-h-[92vh]">
         {/* Top Header */}
         <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-hope-50/70 via-white to-indigo-50/50">
           <div className="flex items-center gap-3">
@@ -230,7 +259,7 @@ export default function VoiceAssistantModal({
                 <h3 className="font-bold text-slate-800 text-base">Hope Voice Assistant</h3>
                 <span className="text-[10px] font-semibold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
-                  Hands-Free Live
+                  Hands-Free Ready
                 </span>
               </div>
               <p className="text-xs text-slate-500">Natural voice commands & personal context</p>
@@ -247,17 +276,44 @@ export default function VoiceAssistantModal({
 
         {/* Central Audio Wave & Interaction Area */}
         <div className="p-6 flex flex-col items-center justify-center text-center bg-slate-50/50 border-b border-slate-100">
-          {/* Dynamic Waveform Visualizer */}
+          {/* Dynamic Waveform Visualizer connected to real mic level */}
           <div className="my-2">
-            <AudioWaveVisualizer state={voiceState} size="lg" />
+            <AudioWaveVisualizer state={voiceState} size="lg" liveLevel={liveLevel} />
           </div>
 
+          {/* Real-time Mic Activity Meter */}
+          {voiceState === 'listening' && (
+            <div className="flex items-center gap-2 mt-1 mb-2">
+              <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                Mic Input:
+              </span>
+              <div className="w-28 h-2 bg-slate-200 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-sky-400 to-emerald-500 transition-all duration-75 rounded-full"
+                  style={{ width: `${Math.max(5, liveLevel)}%` }}
+                />
+              </div>
+              <span className="text-[10px] font-mono text-slate-500">{liveLevel}%</span>
+            </div>
+          )}
+
           {/* Transcript / Listening State Preview */}
-          <div className="mt-4 min-h-[44px] flex items-center justify-center px-4 w-full">
+          <div className="mt-2 min-h-[48px] flex items-center justify-center px-4 w-full">
             {voiceState === 'listening' ? (
-              <p className="text-sm font-medium text-slate-700 animate-pulse">
-                {interimText || transcript || "Listening... Speak naturally (e.g., 'Hey Hope...')"}
-              </p>
+              <div className="space-y-1">
+                <p className="text-sm font-semibold text-slate-800 leading-snug">
+                  {currentDisplaySpeech || (
+                    <span className="text-slate-400 italic">
+                      Listening to your voice... Speak now (e.g., "Hey Hope, remind me to...")
+                    </span>
+                  )}
+                </p>
+                {currentDisplaySpeech && (
+                  <p className="text-[11px] text-hope-600 font-medium animate-pulse">
+                    Pause for 1.5s to submit, or click Submit below
+                  </p>
+                )}
+              </div>
             ) : voiceState === 'processing' ? (
               <p className="text-sm text-hope-600 font-medium flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-hope-500 animate-ping" />
@@ -269,20 +325,30 @@ export default function VoiceAssistantModal({
                 Reading response aloud...
               </p>
             ) : (
-              <p className="text-xs text-slate-400">
-                Tap the microphone or say a command to begin.
+              <p className="text-xs text-slate-500">
+                Click <strong>"Start Talking"</strong> below to activate your microphone.
               </p>
             )}
           </div>
 
+          {/* Error Message with Permission Guidance */}
           {errorMessage && (
-            <div className="mt-2 text-xs text-rose-600 bg-rose-50 border border-rose-200 px-3 py-1.5 rounded-xl">
-              {errorMessage}
+            <div className="mt-3 text-xs text-rose-700 bg-rose-50 border border-rose-200/80 px-3.5 py-2 rounded-2xl flex items-start gap-2 text-left max-w-md">
+              <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold">Microphone issue detected</p>
+                <p className="text-[11px] text-rose-600 mt-0.5">{errorMessage}</p>
+                {errorMessage.includes('permission') && (
+                  <p className="text-[10px] text-slate-600 mt-1">
+                    👉 Click the <strong>lock / tune icon</strong> in your browser address bar and set <strong>Microphone: Allow</strong>, then refresh.
+                  </p>
+                )}
+              </div>
             </div>
           )}
 
-          {/* Primary Mic Action Button */}
-          <div className="mt-5 flex items-center gap-3">
+          {/* Primary Action Buttons */}
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
             <button
               onClick={() => {
                 if (voiceState === 'listening') {
@@ -291,10 +357,10 @@ export default function VoiceAssistantModal({
                   handleStartListening();
                 }
               }}
-              className={`p-4 rounded-2xl flex items-center gap-2 font-semibold text-sm transition-all shadow-md ${
+              className={`px-5 py-3.5 rounded-2xl flex items-center gap-2.5 font-bold text-sm transition-all shadow-md ${
                 voiceState === 'listening'
                   ? 'bg-rose-500 hover:bg-rose-600 text-white shadow-rose-500/25 ring-4 ring-rose-100 animate-pulse'
-                  : 'bg-gradient-to-r from-hope-500 to-hope-600 hover:from-hope-600 hover:to-hope-700 text-white shadow-hope-500/25 ring-4 ring-hope-100'
+                  : 'bg-gradient-to-r from-hope-500 to-indigo-600 hover:from-hope-600 hover:to-indigo-700 text-white shadow-hope-500/25 ring-4 ring-hope-100'
               }`}
             >
               {voiceState === 'listening' ? (
@@ -304,11 +370,23 @@ export default function VoiceAssistantModal({
                 </>
               ) : (
                 <>
-                  <Mic className="w-5 h-5" />
-                  <span>Start Talking</span>
+                  <Mic className="w-5 h-5 animate-pulse" />
+                  <span>Start Talking (Speak to Hope)</span>
                 </>
               )}
             </button>
+
+            {/* Quick Submit Button when words are captured */}
+            {voiceState === 'listening' && currentDisplaySpeech && (
+              <button
+                onClick={handleManualSubmit}
+                className="px-4 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition-all"
+                title="Send current spoken command immediately"
+              >
+                <Send className="w-4 h-4" />
+                <span>Submit Now</span>
+              </button>
+            )}
 
             {voiceState === 'speaking' && (
               <button
@@ -348,8 +426,9 @@ export default function VoiceAssistantModal({
 
         {/* Quick Voice Suggestion Chips */}
         <div className="p-4 bg-slate-50/70 overflow-y-auto">
-          <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2.5">
-            Try Speaking or Tap:
+          <div className="flex items-center justify-between text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2.5">
+            <span>Or Tap a Sample Voice Command:</span>
+            <span className="text-[10px] text-hope-600 font-normal">Click to trigger</span>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {sampleVoiceCommands.map((cmd, idx) => {
@@ -394,4 +473,3 @@ export default function VoiceAssistantModal({
     </div>
   );
 }
-
