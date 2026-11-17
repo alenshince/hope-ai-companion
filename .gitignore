@@ -11,6 +11,12 @@ dist/
 .env
 .env.local
 *.env
+server/.env
+
+# Local Databases and Audio Caches
+server/data/hope.sqlite3*
+server/data/audio_cache/
+server/data/backup_json*/
 
 # Temporary and log files
 *.log

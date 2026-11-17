@@ -33,11 +33,58 @@ async function request(endpoint, options = {}) {
 
 export const api = {
   // Chat & Research
-  sendChatMessage(message, mode = 'research', history = []) {
+  sendChatMessage(message, mode = 'research', history = [], languagePreference = 'auto') {
     return request('/chat', {
       method: 'POST',
-      body: JSON.stringify({ message, mode, history })
+      body: JSON.stringify({ message, mode, history, languagePreference })
     });
+  },
+
+  async streamChatMessage({ message, history = [], languagePreference = 'auto', onStatus, onDelta, onDone, onError }) {
+    try {
+      const response = await fetch('/api/chat/stream', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message, history, languagePreference })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error ${response.status}`);
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder('utf-8');
+      let buffer = '';
+      let currentEvent = 'message';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (line.startsWith('event: ')) {
+            currentEvent = line.slice(7).trim();
+          } else if (line.startsWith('data: ')) {
+            const dataStr = line.slice(6).trim();
+            if (!dataStr) continue;
+            try {
+              const data = JSON.parse(dataStr);
+              if (currentEvent === 'status' && onStatus) onStatus(data.message);
+              else if (currentEvent === 'delta' && onDelta) onDelta(data.text);
+              else if (currentEvent === 'done' && onDone) onDone(data);
+              else if (currentEvent === 'error' && onError) onError(new Error(data.error));
+            } catch {}
+          }
+        }
+      }
+    } catch (err) {
+      if (onError) onError(err);
+      else throw err;
+    }
   },
 
   // Notes
@@ -192,6 +239,32 @@ export const api = {
   getAIContext() {
     return request('/profile/context');
   },
+  validateProfileUrl(url) {
+    return request('/profile/validate-url', {
+      method: 'POST',
+      body: JSON.stringify({ url })
+    });
+  },
+  syncGitHub(githubUrl, consent = true) {
+    return request('/profile/sync-github', {
+      method: 'POST',
+      body: JSON.stringify({ githubUrl, consent })
+    });
+  },
+  savePastedProfileData(platform, content) {
+    return request('/profile/pasted-data', {
+      method: 'POST',
+      body: JSON.stringify({ platform, content })
+    });
+  },
+  clearExternalProfileData() {
+    return request('/profile/external-data', {
+      method: 'DELETE'
+    });
+  },
+  getContextProfile() {
+    return request('/profile/context-profile');
+  },
 
   // Health & Lifestyle Guardian
   getTodayWellness() {
@@ -231,6 +304,51 @@ export const api = {
   },
   getWellnessHistory() {
     return request('/wellness/history');
+  },
+  getMedicines() {
+    return request('/wellness/medicines');
+  },
+  addMedicine(data) {
+    return request('/wellness/medicines', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  },
+  toggleMedicine(id) {
+    return request(`/wellness/medicines/${id}/toggle`, {
+      method: 'POST'
+    });
+  },
+  deleteMedicine(id) {
+    return request(`/wellness/medicines/${id}`, {
+      method: 'DELETE'
+    });
+  },
+  getMoodJournal() {
+    return request('/wellness/mood-journal');
+  },
+  addMoodJournalEntry(data) {
+    return request('/wellness/mood-journal', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  },
+  getHealthConsent() {
+    return request('/wellness/consent');
+  },
+  updateHealthConsent(data) {
+    return request('/wellness/consent', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  },
+  exportHealthData() {
+    return request('/wellness/export');
+  },
+  deleteAllHealthData() {
+    return request('/wellness/delete-all', {
+      method: 'DELETE'
+    });
   },
 
   // Health Check

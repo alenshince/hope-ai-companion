@@ -11,7 +11,8 @@ import {
   Server,
   Database,
   RefreshCw,
-  AlertTriangle
+  AlertTriangle,
+  Moon
 } from 'lucide-react';
 import { api } from '../../api';
 import { playCalmChime } from '../../utils/audio';
@@ -30,16 +31,24 @@ export default function SettingsModal({
 
   const [apiKey, setApiKey] = useState('');
   const [model, setModel] = useState(settings?.model || 'gemini-2.0-flash');
+  const [languagePreference, setLanguagePreference] = useState(settings?.languagePreference || 'auto');
   const [soundEnabled, setSoundEnabled] = useState(settings?.soundEnabled ?? true);
   const [useWebSearch, setUseWebSearch] = useState(settings?.useWebSearch ?? true);
+  const [quietHoursEnabled, setQuietHoursEnabled] = useState(settings?.quietHoursEnabled ?? false);
+  const [quietHoursStart, setQuietHoursStart] = useState(settings?.quietHoursStart || '22:00');
+  const [quietHoursEnd, setQuietHoursEnd] = useState(settings?.quietHoursEnd || '07:00');
   const [saving, setSaving] = useState(false);
   const [healthStatus, setHealthStatus] = useState('checking');
 
   useEffect(() => {
     if (settings) {
       setModel(settings.model || 'gemini-2.0-flash');
+      setLanguagePreference(settings.languagePreference || 'auto');
       setSoundEnabled(settings.soundEnabled ?? true);
       setUseWebSearch(settings.useWebSearch ?? true);
+      setQuietHoursEnabled(settings.quietHoursEnabled ?? false);
+      setQuietHoursStart(settings.quietHoursStart || '22:00');
+      setQuietHoursEnd(settings.quietHoursEnd || '07:00');
     }
 
     api.checkHealth()
@@ -53,8 +62,12 @@ export default function SettingsModal({
     try {
       const updates = {
         model,
+        languagePreference,
         soundEnabled,
-        useWebSearch
+        useWebSearch,
+        quietHoursEnabled,
+        quietHoursStart,
+        quietHoursEnd
       };
       if (apiKey.trim()) {
         updates.geminiApiKey = apiKey.trim();
@@ -169,6 +182,27 @@ export default function SettingsModal({
             </select>
           </div>
 
+          {/* Language Preference */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+              <Globe className="w-3.5 h-3.5 text-hope-600" />
+              Companion Language & Spoken Tone
+            </label>
+            <select
+              value={languagePreference}
+              onChange={(e) => setLanguagePreference(e.target.value)}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-hope-500/20 focus:border-hope-500"
+            >
+              <option value="auto">Auto (Detects Malayalam, Manglish, English, or Mixed)</option>
+              <option value="malayalam">Malayalam (മലയാളം - Natural Spoken Malayalam)</option>
+              <option value="english">English (Warm, Sisterly English)</option>
+              <option value="mixed">Mixed (Malayalam + English Code-Switching)</option>
+            </select>
+            <span className="text-[11px] text-slate-400 block px-1">
+              Hope naturally mirrors your everyday Malayalam, Manglish, or English.
+            </span>
+          </div>
+
           {/* Toggles */}
           <div className="space-y-3 pt-2 border-t border-slate-100 text-xs">
             <label className="flex items-center justify-between p-2.5 rounded-xl hover:bg-slate-50 cursor-pointer">
@@ -202,6 +236,44 @@ export default function SettingsModal({
                 className="w-4 h-4 rounded text-hope-600 focus:ring-hope-500"
               />
             </label>
+
+            {/* Quiet Hours */}
+            <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2.5">
+              <label className="flex items-center justify-between cursor-pointer">
+                <div className="flex items-center gap-2 text-slate-700">
+                  <Moon className="w-4 h-4 text-indigo-600" />
+                  <div>
+                    <span className="font-semibold block text-xs">Quiet Hours (Proactive Silence)</span>
+                    <span className="text-[11px] text-slate-400">Mutes proactive audio alerts and late check-in chimes</span>
+                  </div>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={quietHoursEnabled}
+                  onChange={(e) => setQuietHoursEnabled(e.target.checked)}
+                  className="w-4 h-4 rounded text-hope-600 focus:ring-hope-500"
+                />
+              </label>
+
+              {quietHoursEnabled && (
+                <div className="flex items-center gap-2 pt-1 border-t border-slate-200/60 text-xs">
+                  <span className="text-slate-500 text-[11px]">Active from:</span>
+                  <input
+                    type="time"
+                    value={quietHoursStart}
+                    onChange={(e) => setQuietHoursStart(e.target.value)}
+                    className="px-2 py-1 rounded-lg border border-slate-200 bg-white font-mono text-xs"
+                  />
+                  <span className="text-slate-500 text-[11px]">to:</span>
+                  <input
+                    type="time"
+                    value={quietHoursEnd}
+                    onChange={(e) => setQuietHoursEnd(e.target.value)}
+                    className="px-2 py-1 rounded-lg border border-slate-200 bg-white font-mono text-xs"
+                  />
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Diagnostics Card */}

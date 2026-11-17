@@ -20,7 +20,13 @@ import {
   Flame,
   Shield,
   FolderGit2,
-  BookmarkCheck
+  BookmarkCheck,
+  Instagram,
+  RefreshCw,
+  ShieldAlert,
+  Link,
+  FileText,
+  CheckCircle2
 } from 'lucide-react';
 import { api } from '../../api';
 
@@ -33,6 +39,11 @@ export default function AboutMeDashboard({ addToast }) {
   const [isAddMemoryOpen, setIsAddMemoryOpen] = useState(false);
   const [isContextPreviewOpen, setIsContextPreviewOpen] = useState(false);
   const [compiledContext, setCompiledContext] = useState('');
+  const [githubUrlInput, setGithubUrlInput] = useState('');
+  const [isSyncingGitHub, setIsSyncingGitHub] = useState(false);
+  const [linkedinSummaryInput, setLinkedinSummaryInput] = useState('');
+  const [instagramBioInput, setInstagramBioInput] = useState('');
+  const [isEditingPastedData, setIsEditingPastedData] = useState(false);
 
   // New Memory Form State
   const [newTitle, setNewTitle] = useState('');
@@ -50,6 +61,9 @@ export default function AboutMeDashboard({ addToast }) {
         api.getAIContext()
       ]);
       setProfile(profileRes.profile);
+      setGithubUrlInput(profileRes.profile?.links?.github || 'https://github.com/alenshince');
+      setLinkedinSummaryInput(profileRes.profile?.externalData?.linkedinSummary || '');
+      setInstagramBioInput(profileRes.profile?.externalData?.instagramBio || '');
       setMemories(memoriesRes);
       setCompiledContext(contextRes.context);
     } catch (err) {
@@ -127,6 +141,68 @@ export default function AboutMeDashboard({ addToast }) {
       }
     } catch (err) {
       if (addToast) addToast({ type: 'error', title: 'Error', message: err.message });
+    }
+  };
+
+  const handleSyncGitHub = async () => {
+    if (!githubUrlInput.trim()) return;
+    setIsSyncingGitHub(true);
+    try {
+      const validation = await api.validateProfileUrl(githubUrlInput.trim());
+      if (!validation.valid || validation.platform !== 'github') {
+        throw new Error(validation.error || 'Please enter a valid https://github.com/username URL.');
+      }
+
+      const res = await api.syncGitHub(validation.normalizedUrl, true);
+      setProfile(res.profile);
+      const contextRes = await api.getAIContext();
+      setCompiledContext(contextRes.context);
+
+      if (addToast) {
+        addToast({
+          type: 'success',
+          title: 'GitHub Synced Successfully 🐙',
+          message: `Indexed @${res.github.username} with ${res.github.publicReposCount} public repos & languages (${res.github.languages.join(', ') || 'Code'}).`
+        });
+      }
+    } catch (err) {
+      if (addToast) addToast({ type: 'error', title: 'GitHub Sync Failed', message: err.message });
+    } finally {
+      setIsSyncingGitHub(false);
+    }
+  };
+
+  const handleSavePastedData = async (platform, content) => {
+    try {
+      const res = await api.savePastedProfileData(platform, content);
+      setProfile(res.profile);
+      const contextRes = await api.getAIContext();
+      setCompiledContext(contextRes.context);
+      if (addToast) {
+        addToast({
+          type: 'success',
+          title: `${platform.toUpperCase()} Context Updated`,
+          message: 'Saved securely with prompt-injection defense.'
+        });
+      }
+    } catch (err) {
+      if (addToast) addToast({ type: 'error', title: 'Save Failed', message: err.message });
+    }
+  };
+
+  const handleClearExternalData = async () => {
+    if (confirm('Clear all imported GitHub and pasted profile data from Hope?')) {
+      try {
+        const res = await api.clearExternalProfileData();
+        setProfile(res.profile);
+        setLinkedinSummaryInput('');
+        setInstagramBioInput('');
+        const contextRes = await api.getAIContext();
+        setCompiledContext(contextRes.context);
+        if (addToast) addToast({ type: 'info', title: 'External Context Cleared', message: 'Removed all external data.' });
+      } catch (err) {
+        if (addToast) addToast({ type: 'error', title: 'Error', message: err.message });
+      }
     }
   };
 
@@ -366,6 +442,180 @@ export default function AboutMeDashboard({ addToast }) {
             <p className="text-[11px] text-slate-300 leading-relaxed">
               Hands-on sessions on Figma prototyping, Flutter architecture, and design-to-code workflows for junior students.
             </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Connected Public Profiles & Official Data Sync */}
+      <div className="bg-white rounded-3xl p-6 md:p-8 border border-slate-200/80 shadow-sm space-y-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-slate-900 text-white flex items-center justify-center">
+              <Link className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                Connected Profiles & External Context
+                <span className="text-[10px] font-semibold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full flex items-center gap-1">
+                  <Shield className="w-3 h-3" />
+                  Prompt-Injection Protected
+                </span>
+              </h2>
+              <p className="text-xs text-slate-500">
+                Official REST API syncing with zero unauthorized scraping and strict SSRF defenses.
+              </p>
+            </div>
+          </div>
+
+          {profile.externalData && Object.keys(profile.externalData).length > 0 && (
+            <button
+              onClick={handleClearExternalData}
+              className="text-xs text-rose-600 hover:text-rose-700 font-medium px-3 py-1.5 rounded-xl border border-rose-200 hover:bg-rose-50 transition-colors"
+            >
+              Clear External Data
+            </button>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* GitHub Official REST API Sync */}
+          <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-slate-800 font-bold text-sm">
+                <Github className="w-4 h-4 text-slate-900" />
+                <span>GitHub Public Portfolio</span>
+              </div>
+              <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                Official REST API (v3)
+              </span>
+            </div>
+
+            <p className="text-xs text-slate-600 leading-relaxed">
+              Hope queries the official public GitHub REST API with your consent (no scraping) to index your public repositories, primary languages, and contributions.
+            </p>
+
+            <div className="space-y-2">
+              <label className="text-[11px] font-semibold text-slate-700 block">GitHub Profile URL (HTTPS only):</label>
+              <div className="flex gap-2">
+                <input
+                  type="url"
+                  value={githubUrlInput}
+                  onChange={(e) => setGithubUrlInput(e.target.value)}
+                  placeholder="https://github.com/alenshince"
+                  className="flex-1 px-3 py-2 rounded-xl border border-slate-300 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-hope-500/20"
+                />
+                <button
+                  type="button"
+                  disabled={isSyncingGitHub}
+                  onClick={handleSyncGitHub}
+                  className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-all disabled:opacity-50"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isSyncingGitHub ? 'animate-spin' : ''}`} />
+                  <span>{isSyncingGitHub ? 'Syncing...' : 'Sync GitHub'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* GitHub Sync Status Card */}
+            {profile.externalData?.github ? (
+              <div className="p-3.5 rounded-xl bg-white border border-slate-200 space-y-2 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-slate-800">
+                    @{profile.externalData.github.username}
+                  </span>
+                  <span className="text-[10px] text-slate-400">
+                    Synced: {new Date(profile.externalData.github.fetchedAt).toLocaleDateString()}
+                  </span>
+                </div>
+                <div className="grid grid-cols-3 gap-2 text-center text-[11px]">
+                  <div className="bg-slate-50 p-1.5 rounded-lg border border-slate-100">
+                    <span className="text-slate-400 block text-[10px]">Public Repos</span>
+                    <span className="font-bold text-slate-800">{profile.externalData.github.publicReposCount}</span>
+                  </div>
+                  <div className="bg-slate-50 p-1.5 rounded-lg border border-slate-100">
+                    <span className="text-slate-400 block text-[10px]">Followers</span>
+                    <span className="font-bold text-slate-800">{profile.externalData.github.followers}</span>
+                  </div>
+                  <div className="bg-slate-50 p-1.5 rounded-lg border border-slate-100">
+                    <span className="text-slate-400 block text-[10px]">Languages</span>
+                    <span className="font-bold text-hope-700 truncate">{profile.externalData.github.languages?.length || 0}</span>
+                  </div>
+                </div>
+                {profile.externalData.github.languages && (
+                  <div className="flex flex-wrap gap-1 pt-1">
+                    {profile.externalData.github.languages.map((l, i) => (
+                      <span key={i} className="text-[10px] font-mono bg-hope-50 text-hope-800 px-2 py-0.5 rounded-md border border-hope-200">
+                        {l}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="p-3 rounded-xl bg-white border border-slate-200 text-xs text-slate-400 italic">
+                No GitHub data synced yet. Tap "Sync GitHub" to pull your repositories.
+              </div>
+            )}
+          </div>
+
+          {/* LinkedIn & Instagram Manual Import (No Scraping Policy) */}
+          <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-slate-800 font-bold text-sm">
+                <Linkedin className="w-4 h-4 text-sky-700" />
+                <Instagram className="w-4 h-4 text-pink-600" />
+                <span>LinkedIn & Instagram Data</span>
+              </div>
+              <span className="text-[10px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                Terms of Service Protected (No Scraping)
+              </span>
+            </div>
+
+            <p className="text-xs text-slate-600 leading-relaxed">
+              To respect user privacy and platform Terms of Service, Hope <strong>never scrapes LinkedIn or Instagram</strong>. Securely paste your headline or creative focus below to personalize career advice:
+            </p>
+
+            {/* LinkedIn Paste */}
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-semibold text-slate-700 flex items-center justify-between">
+                <span>LinkedIn Headline & About:</span>
+                <button
+                  type="button"
+                  onClick={() => handleSavePastedData('linkedin', linkedinSummaryInput)}
+                  className="text-hope-600 hover:text-hope-800 text-[11px] font-bold"
+                >
+                  Save LinkedIn
+                </button>
+              </label>
+              <textarea
+                rows={2}
+                value={linkedinSummaryInput}
+                onChange={(e) => setLinkedinSummaryInput(e.target.value)}
+                placeholder="Paste your LinkedIn headline, skills, or career objective..."
+                className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-hope-500/20"
+              />
+            </div>
+
+            {/* Instagram Paste */}
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-semibold text-slate-700 flex items-center justify-between">
+                <span>Instagram Creative Bio:</span>
+                <button
+                  type="button"
+                  onClick={() => handleSavePastedData('instagram', instagramBioInput)}
+                  className="text-hope-600 hover:text-hope-800 text-[11px] font-bold"
+                >
+                  Save Instagram
+                </button>
+              </label>
+              <input
+                type="text"
+                value={instagramBioInput}
+                onChange={(e) => setInstagramBioInput(e.target.value)}
+                placeholder="Paste your Instagram creative focus (e.g. Design Lead • UI/UX Prototyper)..."
+                className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-hope-500/20"
+              />
+            </div>
           </div>
         </div>
       </div>

@@ -35,6 +35,7 @@ import {
 
 export default function ResearchChat({ 
   folders = [], 
+  settings = null,
   onNoteCreated, 
   addToast,
   onNavigateToNotes 
@@ -59,6 +60,7 @@ What would you like to research today?`,
   const [isListening, setIsListening] = useState(false);
   const [speakingMessageId, setSpeakingMessageId] = useState(null);
   const [autoSpeak, setAutoSpeak] = useState(false);
+  const [thinkingStatus, setThinkingStatus] = useState('');
 
   const messagesEndRef = useRef(null);
   const recognizerRef = useRef(null);
@@ -178,47 +180,81 @@ What would you like to research today?`,
       timestamp: new Date().toISOString()
     };
 
-    setMessages(prev => [...prev, userMsg]);
+    const hopeMsgId = `hope-${Date.now()}`;
+    const initialHopeMsg = {
+      id: hopeMsgId,
+      role: 'hope',
+      query,
+      text: '',
+      sources: [],
+      suggestedFollowUps: [],
+      timestamp: new Date().toISOString()
+    };
+
+    setMessages(prev => [...prev, userMsg, initialHopeMsg]);
     setLoading(true);
+    setThinkingStatus('Hope is analyzing your question...');
+
+    let fullReply = '';
 
     try {
-      const mode = liveWebSearch ? 'research' : 'chat';
       const history = messages.slice(-4).map(m => ({ role: m.role, content: m.text }));
 
-      const res = await api.sendChatMessage(query, mode, history);
+      await api.streamChatMessage({
+        message: query,
+        history,
+        languagePreference: settings?.languagePreference || 'auto',
+        onStatus: (status) => {
+          setThinkingStatus(status);
+        },
+        onDelta: (delta) => {
+          setThinkingStatus('');
+          fullReply += delta;
+          setMessages(prev => prev.map(m => m.id === hopeMsgId ? { ...m, text: fullReply } : m));
+        },
+        onDone: (data) => {
+          setThinkingStatus('');
+          const finalReply = data.reply || fullReply;
+          setMessages(prev => prev.map(m => m.id === hopeMsgId ? {
+            ...m,
+            text: finalReply,
+            sources: data.sources || [],
+            usedModel: data.usedModel,
+            language: data.language
+          } : m));
 
-      const hopeMsg = {
-        id: `hope-${Date.now()}`,
-        role: 'hope',
-        query,
-        text: res.reply,
-        sources: res.sources || [],
-        suggestedFollowUps: res.suggestedFollowUps || [],
-        usedModel: res.usedModel,
-        mode: res.mode,
-        timestamp: new Date().toISOString()
-      };
-
-      setMessages(prev => [...prev, hopeMsg]);
-
-      // If autoSpeak is enabled, read aloud Hope's reply
-      if (autoSpeak) {
-        handleSpeakMessage(hopeMsg.id, res.reply);
-      }
+          // If autoSpeak is enabled, read aloud Hope's reply
+          if (autoSpeak && finalReply) {
+            handleSpeakMessage(hopeMsgId, finalReply);
+          }
+        },
+        onError: (err) => {
+          console.warn('Streaming error, falling back to REST endpoint:', err);
+          api.sendChatMessage(query, 'chat', history, settings?.languagePreference || 'auto').then(res => {
+            setMessages(prev => prev.map(m => m.id === hopeMsgId ? {
+              ...m,
+              text: res.reply,
+              sources: res.sources || [],
+              usedModel: res.usedModel,
+              language: res.language
+            } : m));
+          }).catch(restErr => {
+            setMessages(prev => prev.map(m => m.id === hopeMsgId ? {
+              ...m,
+              text: `I encountered an issue gathering findings: ${restErr.message}. Let me know if you would like me to retry.`
+            } : m));
+          });
+        }
+      });
     } catch (err) {
       console.error('Research query error:', err);
-      setMessages(prev => [
-        ...prev,
-        {
-          id: `err-${Date.now()}`,
-          role: 'hope',
-          text: `I encountered an issue gathering findings: ${err.message}. Let me know if you would like me to retry or rephrase the question.`,
-          sources: [],
-          timestamp: new Date().toISOString()
-        }
-      ]);
+      setMessages(prev => prev.map(m => m.id === hopeMsgId ? {
+        ...m,
+        text: `I encountered an issue gathering findings: ${err.message}. Let me know if you would like me to retry or rephrase the question.`
+      } : m));
     } finally {
       setLoading(false);
+      setThinkingStatus('');
     }
   };
 
@@ -424,21 +460,19 @@ What would you like to research today?`,
           })}
 
           {/* Thinking / Searching Indicator */}
-          {loading && (
+          {loading && thinkingStatus && (
             <div className="flex gap-3.5 justify-start animate-in fade-in">
               <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-hope-500 to-indigo-600 text-white flex items-center justify-center shrink-0 shadow-sm mt-1">
                 <Sparkles className="w-4 h-4 animate-spin" />
               </div>
-              <div className="bg-white border border-slate-200 rounded-2xl rounded-tl-sm p-4 shadow-sm text-xs text-slate-600 flex items-center gap-3">
+              <div className="bg-white border border-hope-200/80 rounded-2xl rounded-tl-sm p-4 shadow-sm text-xs text-hope-900 flex items-center gap-3">
                 <div className="flex items-center gap-1">
                   <span className="w-2 h-2 rounded-full bg-hope-500 animate-bounce" style={{ animationDelay: '0ms' }} />
                   <span className="w-2 h-2 rounded-full bg-hope-500 animate-bounce" style={{ animationDelay: '150ms' }} />
                   <span className="w-2 h-2 rounded-full bg-hope-500 animate-bounce" style={{ animationDelay: '300ms' }} />
                 </div>
-                <span>
-                  {liveWebSearch
-                    ? 'Hope is exploring live web sources and synthesizing findings...'
-                    : 'Hope is reasoning through your question...'}
+                <span className="font-medium">
+                  {thinkingStatus}
                 </span>
               </div>
             </div>

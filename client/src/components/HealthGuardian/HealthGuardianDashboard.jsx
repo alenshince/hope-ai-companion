@@ -20,7 +20,13 @@ import {
   Activity,
   Sliders,
   ChevronRight,
-  Eye
+  Eye,
+  Pill,
+  Download,
+  Trash2,
+  ShieldAlert,
+  Lock,
+  FileCheck
 } from 'lucide-react';
 import { api } from '../../api';
 import { playCalmChime, playSuccessDing } from '../../utils/audio';
@@ -28,6 +34,8 @@ import { playCalmChime, playSuccessDing } from '../../utils/audio';
 export default function HealthGuardianDashboard({ addToast }) {
   const [wellness, setWellness] = useState(null);
   const [history, setHistory] = useState([]);
+  const [medicines, setMedicines] = useState([]);
+  const [moodJournal, setMoodJournal] = useState([]);
   const [proactiveAlert, setProactiveAlert] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isBreathingActive, setIsBreathingActive] = useState(false);
@@ -35,18 +43,28 @@ export default function HealthGuardianDashboard({ addToast }) {
   const [mealNote, setMealNote] = useState('');
   const [selectedMealForModal, setSelectedMealForModal] = useState(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [newMedName, setNewMedName] = useState('');
+  const [newMedDosage, setNewMedDosage] = useState('');
+  const [newMedTime, setNewMedTime] = useState('09:00');
+  const [isAddingMed, setIsAddingMed] = useState(false);
+  const [journalNote, setJournalNote] = useState('');
+  const [journalRating, setJournalRating] = useState('calm');
 
   const loadWellnessData = async () => {
     setIsLoading(true);
     try {
-      const [todayData, proactiveData, historyData] = await Promise.all([
+      const [todayData, proactiveData, historyData, medData, journalData] = await Promise.all([
         api.getTodayWellness(),
         api.checkProactiveWellness(),
-        api.getWellnessHistory()
+        api.getWellnessHistory(),
+        api.getMedicines().catch(() => []),
+        api.getMoodJournal().catch(() => [])
       ]);
       setWellness(todayData);
       setProactiveAlert(proactiveData.triggered ? proactiveData : null);
       setHistory(historyData.history || []);
+      setMedicines(medData || []);
+      setMoodJournal(journalData || []);
     } catch (err) {
       console.error('Failed to load wellness dashboard:', err);
     } finally {
@@ -156,6 +174,97 @@ export default function HealthGuardianDashboard({ addToast }) {
     }
   };
 
+  const handleToggleMedicine = async (medId) => {
+    try {
+      const updated = await api.toggleMedicine(medId);
+      setMedicines(prev => prev.map(m => m.id === medId ? updated : m));
+      playSuccessDing();
+      if (addToast) {
+        addToast({
+          type: 'success',
+          title: updated.takenToday ? 'Dose Marked Taken 💊' : 'Dose Marked Pending',
+          message: `${updated.name} schedule updated.`
+        });
+      }
+    } catch (err) {
+      if (addToast) addToast({ type: 'error', title: 'Medicine Error', message: err.message });
+    }
+  };
+
+  const handleAddMedicine = async (e) => {
+    e.preventDefault();
+    if (!newMedName.trim()) return;
+    try {
+      const created = await api.addMedicine({
+        name: newMedName.trim(),
+        dosage: newMedDosage.trim(),
+        time: newMedTime
+      });
+      setMedicines(prev => [...prev, created]);
+      setNewMedName('');
+      setNewMedDosage('');
+      setIsAddingMed(false);
+      if (addToast) addToast({ type: 'success', title: 'Medicine Added', message: `${created.name} added to schedule.` });
+    } catch (err) {
+      if (addToast) addToast({ type: 'error', title: 'Failed to add medicine', message: err.message });
+    }
+  };
+
+  const handleDeleteMedicine = async (medId) => {
+    try {
+      await api.deleteMedicine(medId);
+      setMedicines(prev => prev.filter(m => m.id !== medId));
+      if (addToast) addToast({ type: 'info', title: 'Medicine Removed', message: 'Removed from schedule.' });
+    } catch (err) {
+      if (addToast) addToast({ type: 'error', title: 'Error', message: err.message });
+    }
+  };
+
+  const handleAddJournalEntry = async (e) => {
+    e.preventDefault();
+    if (!journalNote.trim()) return;
+    try {
+      const created = await api.addMoodJournalEntry({
+        rating: journalRating,
+        note: journalNote.trim()
+      });
+      setMoodJournal(prev => [created, ...prev]);
+      setJournalNote('');
+      playCalmChime();
+      if (addToast) addToast({ type: 'hope', title: 'Encrypted Reflection Saved 🔒', message: 'Stored with AES-256-GCM encryption at rest.' });
+    } catch (err) {
+      if (addToast) addToast({ type: 'error', title: 'Journal Error', message: err.message });
+    }
+  };
+
+  const handleExportHealthData = async () => {
+    try {
+      const data = await api.exportHealthData();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `hope-health-export-${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      if (addToast) addToast({ type: 'success', title: 'Data Exported', message: 'Downloaded under DPDP/GDPR Portability standard.' });
+    } catch (err) {
+      if (addToast) addToast({ type: 'error', title: 'Export Failed', message: err.message });
+    }
+  };
+
+  const handleDeleteAllHealthData = async () => {
+    if (confirm('Are you sure you want to permanently erase all personal health records, mood journals, and medicine logs? This action follows India DPDP Act / GDPR Right to Erasure and cannot be undone.')) {
+      try {
+        await api.deleteAllHealthData();
+        await loadWellnessData();
+        if (addToast) addToast({ type: 'info', title: 'Health Records Erased', message: 'All personal health data wiped.' });
+      } catch (err) {
+        if (addToast) addToast({ type: 'error', title: 'Erase Failed', message: err.message });
+      }
+    }
+  };
+
   if (isLoading || !wellness) {
     return (
       <div className="flex-1 h-full flex items-center justify-center bg-slate-50">
@@ -173,6 +282,38 @@ export default function HealthGuardianDashboard({ addToast }) {
 
   return (
     <div className="flex-1 h-full overflow-y-auto bg-slate-50/70 p-6 md:p-8 space-y-6">
+      {/* Medical Boundaries & Emergency Helpline Banner */}
+      <div className="bg-white border border-rose-100 rounded-3xl p-4 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-gradient-to-r from-rose-50/60 via-white to-amber-50/40">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
+            <ShieldAlert className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-xs text-slate-800">24/7 Crisis & Emergency Support (India)</span>
+              <span className="text-[10px] font-semibold bg-rose-100 text-rose-800 px-2 py-0.5 rounded-full">Non-Doctor Companion</span>
+            </div>
+            <p className="text-[11px] text-slate-500 mt-0.5">
+              Hope is an AI companion and cannot diagnose or prescribe. In any medical emergency, dial <strong>112</strong> / <strong>108</strong>. For free 24/7 mental health tele-counseling, call <strong>14416 (Tele-MANAS)</strong>.
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <a
+            href="tel:112"
+            className="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-sm transition-all flex items-center gap-1"
+          >
+            Dial 112
+          </a>
+          <a
+            href="tel:14416"
+            className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-sm transition-all flex items-center gap-1"
+          >
+            Tele-MANAS (14416)
+          </a>
+        </div>
+      </div>
+
       {/* Proactive Guardian Alert (e.g. Dinner Threshold or Late Night) */}
       {proactiveAlert && (
         <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 text-white p-5 rounded-3xl shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-4 animate-fadeIn">
@@ -635,6 +776,227 @@ export default function HealthGuardianDashboard({ addToast }) {
             </span>
             <span className="text-slate-400">Hope Guardian v1.0</span>
           </div>
+        </div>
+      </div>
+
+      {/* Medicine Reminders & Encrypted Mood Journal */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Medicine Schedule Tracker */}
+        <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-violet-100 text-violet-700 flex items-center justify-center">
+                <Pill className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="font-bold text-slate-800 text-base">Medicine & Supplement Schedule</h3>
+                <p className="text-xs text-slate-500">Proactive reminders for daily doses</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setIsAddingMed(!isAddingMed)}
+              className="text-xs font-semibold px-3 py-1.5 rounded-xl bg-violet-50 text-violet-700 hover:bg-violet-100 transition-colors flex items-center gap-1"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Add Medicine
+            </button>
+          </div>
+
+          {/* Add Medicine Inline Form */}
+          {isAddingMed && (
+            <form onSubmit={handleAddMedicine} className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                <input
+                  type="text"
+                  placeholder="Medicine name..."
+                  value={newMedName}
+                  onChange={(e) => setNewMedName(e.target.value)}
+                  className="px-3 py-2 rounded-xl border border-slate-200 bg-white"
+                  required
+                />
+                <input
+                  type="text"
+                  placeholder="Dosage (e.g. 1 tab after food)"
+                  value={newMedDosage}
+                  onChange={(e) => setNewMedDosage(e.target.value)}
+                  className="px-3 py-2 rounded-xl border border-slate-200 bg-white"
+                />
+                <input
+                  type="time"
+                  value={newMedTime}
+                  onChange={(e) => setNewMedTime(e.target.value)}
+                  className="px-3 py-2 rounded-xl border border-slate-200 bg-white"
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsAddingMed(false)}
+                  className="px-3 py-1.5 text-xs text-slate-500 hover:text-slate-700"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-1.5 text-xs font-semibold bg-violet-600 hover:bg-violet-700 text-white rounded-xl"
+                >
+                  Save Schedule
+                </button>
+              </div>
+            </form>
+          )}
+
+          {/* Medicine List */}
+          <div className="space-y-2.5">
+            {medicines.length === 0 ? (
+              <p className="text-xs text-slate-400 italic py-2">No medicines currently scheduled. Tap "+ Add Medicine" to track daily doses.</p>
+            ) : (
+              medicines.map((med) => (
+                <div
+                  key={med.id}
+                  className={`p-3.5 rounded-2xl border transition-all flex items-center justify-between ${
+                    med.takenToday
+                      ? 'bg-emerald-50/60 border-emerald-200'
+                      : 'bg-slate-50/80 border-slate-200/70 hover:border-violet-200'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => handleToggleMedicine(med.id)}
+                      className={`w-6 h-6 rounded-lg flex items-center justify-center transition-all ${
+                        med.takenToday
+                          ? 'bg-emerald-600 text-white shadow-sm'
+                          : 'border-2 border-slate-300 hover:border-violet-500 bg-white'
+                      }`}
+                      title={med.takenToday ? 'Mark pending' : 'Mark taken'}
+                    >
+                      {med.takenToday && <CheckCircle2 className="w-4 h-4" />}
+                    </button>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-xs font-bold ${med.takenToday ? 'line-through text-slate-400' : 'text-slate-800'}`}>
+                          {med.name}
+                        </span>
+                        <span className="text-[10px] text-violet-700 bg-violet-100 px-1.5 py-0.5 rounded font-mono">
+                          {med.time}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-500">{med.dosage}</p>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => handleDeleteMedicine(med.id)}
+                    className="text-slate-400 hover:text-rose-600 p-1 rounded-lg"
+                    title="Remove medicine"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Encrypted Mood Journal & Reflection */}
+        <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center">
+                <Lock className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="font-bold text-slate-800 text-base">Encrypted Mood Journal</h3>
+                <p className="text-xs text-slate-500">AES-256-GCM encrypted reflections at rest</p>
+              </div>
+            </div>
+            <span className="text-[10px] font-semibold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full flex items-center gap-1">
+              <Shield className="w-3 h-3" />
+              DPDP Protected
+            </span>
+          </div>
+
+          {/* New Journal Entry Form */}
+          <form onSubmit={handleAddJournalEntry} className="space-y-2.5">
+            <div className="flex gap-2">
+              <select
+                value={journalRating}
+                onChange={(e) => setJournalRating(e.target.value)}
+                className="px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-slate-50 focus:bg-white"
+              >
+                <option value="calm">Calm & Centered</option>
+                <option value="energized">Energized</option>
+                <option value="focused">Deep Focus</option>
+                <option value="fatigued">Tired / Low Energy</option>
+                <option value="stressed">Overwhelmed</option>
+              </select>
+            </div>
+            <textarea
+              rows={2}
+              value={journalNote}
+              onChange={(e) => setJournalNote(e.target.value)}
+              placeholder="What went well today? Any thoughts you want to safely record? (Encrypted automatically)..."
+              className="w-full px-3.5 py-2.5 rounded-2xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-hope-500/20 focus:border-hope-500"
+            />
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] text-slate-400">Decrypted only in your authenticated session</span>
+              <button
+                type="submit"
+                className="px-4 py-1.5 text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white rounded-xl shadow-sm transition-all"
+              >
+                Save Reflection 🔒
+              </button>
+            </div>
+          </form>
+
+          {/* Past Journal Entries */}
+          <div className="space-y-2 max-h-48 overflow-y-auto pt-1">
+            {moodJournal.length === 0 ? (
+              <p className="text-xs text-slate-400 italic py-1">No reflections logged yet today. Write a reflection above.</p>
+            ) : (
+              moodJournal.map((entry) => (
+                <div key={entry.id} className="p-3 rounded-2xl bg-slate-50 border border-slate-200/60 text-xs space-y-1">
+                  <div className="flex items-center justify-between text-[11px] text-slate-400">
+                    <span className="font-semibold text-slate-700 capitalize">{entry.rating}</span>
+                    <span>{new Date(entry.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                  </div>
+                  <p className="text-slate-600 leading-relaxed">{entry.note}</p>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Data Privacy, DPDP Act & GDPR Rights Card */}
+      <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <span className="font-bold text-slate-800 text-sm">Personal Health Data Rights & Consent</span>
+            <span className="text-[10px] font-semibold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">
+              India DPDP Act 2023 & GDPR
+            </span>
+          </div>
+          <p className="text-xs text-slate-500 max-w-xl">
+            You maintain full ownership of your health logs. All sensitive records are encrypted at rest with AES-256-GCM. You have the right to download your data or request complete erasure at any time.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={handleExportHealthData}
+            className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-colors"
+          >
+            <Download className="w-3.5 h-3.5" />
+            Export JSON
+          </button>
+          <button
+            onClick={handleDeleteAllHealthData}
+            className="px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-semibold flex items-center gap-1.5 transition-colors"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            Erase Health Data
+          </button>
         </div>
       </div>
     </div>

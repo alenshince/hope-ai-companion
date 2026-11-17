@@ -67,7 +67,16 @@ router.post('/mood', (req, res) => {
 // Analyzes current time and user habits to trigger gentle proactive nudges
 router.get('/check-in', (req, res) => {
   try {
-    const wellness = db.getTodayWellness();
+    const userId = req.user?.id;
+    if (db.isQuietHours && db.isQuietHours(userId)) {
+      return res.json({
+        triggered: false,
+        quietHours: true,
+        message: 'Quiet hours are active. Proactive sound & meal notifications are paused to protect sleep.'
+      });
+    }
+
+    const wellness = db.getTodayWellness(userId);
     const settings = wellness.settings || {};
     const now = new Date();
     const currentHour = now.getHours();
@@ -170,6 +179,30 @@ router.get('/check-in', (req, res) => {
       }
     }
 
+    // Check Medicine Reminders
+    if (!nudge && settings.medicineRemindersEnabled !== false) {
+      const medicines = db.getMedicines ? db.getMedicines() : [];
+      const untakenMeds = medicines.filter(m => !m.takenToday && m.time);
+      if (untakenMeds.length > 0) {
+        for (const med of untakenMeds) {
+          const medTimeMinutes = parseTimeToMinutes(med.time);
+          if (timeInMinutes >= medTimeMinutes && timeInMinutes <= medTimeMinutes + 120) {
+            nudge = {
+              triggered: true,
+              type: 'medicine',
+              severity: 'important',
+              title: `Medicine Reminder: ${med.name} 💊`,
+              message: `Time for your scheduled dose of ${med.name} (${med.dosage || 'as advised'}). Remember to take it with water.`,
+              voiceText: `Alen, it is time for your scheduled ${med.name}. Don't forget to take it with water.`,
+              actionType: 'take_medicine',
+              actionPayload: { medicineId: med.id }
+            };
+            break;
+          }
+        }
+      }
+    }
+
     if (!nudge) {
       return res.json({
         triggered: false,
@@ -200,6 +233,116 @@ router.get('/history', (req, res) => {
     res.json(history);
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch wellness history', details: err.message });
+  }
+});
+
+// GET /api/wellness/medicines - List scheduled medicines
+router.get('/medicines', (req, res) => {
+  try {
+    const medicines = db.getMedicines();
+    res.json(medicines);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch medicines', details: err.message });
+  }
+});
+
+// POST /api/wellness/medicines - Add a new scheduled medicine
+router.post('/medicines', (req, res) => {
+  try {
+    const { name, dosage, time, category } = req.body;
+    if (!name) {
+      return res.status(400).json({ error: 'Medicine name is required' });
+    }
+    const created = db.addMedicine({ name, dosage, time, category });
+    res.status(201).json(created);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to add medicine', details: err.message });
+  }
+});
+
+// POST /api/wellness/medicines/:id/toggle - Toggle medicine taken status
+router.post('/medicines/:id/toggle', (req, res) => {
+  try {
+    const updated = db.toggleMedicine(req.params.id);
+    if (!updated) return res.status(404).json({ error: 'Medicine not found' });
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to toggle medicine', details: err.message });
+  }
+});
+
+// DELETE /api/wellness/medicines/:id - Remove medicine
+router.delete('/medicines/:id', (req, res) => {
+  try {
+    db.deleteMedicine(req.params.id);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to delete medicine', details: err.message });
+  }
+});
+
+// GET /api/wellness/mood-journal - Get decrypted mood journal entries
+router.get('/mood-journal', (req, res) => {
+  try {
+    const journal = db.getMoodJournal();
+    res.json(journal);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch mood journal', details: err.message });
+  }
+});
+
+// POST /api/wellness/mood-journal - Add mood journal entry (encrypted at rest with AES-256-GCM)
+router.post('/mood-journal', (req, res) => {
+  try {
+    const { rating, note, tags } = req.body;
+    if (!rating) return res.status(400).json({ error: 'Rating is required' });
+    const created = db.addMoodJournalEntry({ rating, note, tags });
+    res.status(201).json(created);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to add mood journal entry', details: err.message });
+  }
+});
+
+// GET /api/wellness/consent - Get DPDP Act / GDPR health consent status
+router.get('/consent', (req, res) => {
+  try {
+    const consent = db.getHealthConsent();
+    res.json(consent);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch consent status', details: err.message });
+  }
+});
+
+// POST /api/wellness/consent - Update DPDP Act / GDPR health consent
+router.post('/consent', (req, res) => {
+  try {
+    const { consentGiven, country } = req.body;
+    const updated = db.updateHealthConsent({ consentGiven, country });
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to update consent', details: err.message });
+  }
+});
+
+// GET /api/wellness/export - Export all health data in JSON (DPDP / GDPR Data Portability)
+router.get('/export', (req, res) => {
+  try {
+    const exportData = db.exportAllHealthData();
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', `attachment; filename="hope-health-export-${Date.now()}.json"`);
+    res.json(exportData);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to export health records', details: err.message });
+  }
+});
+
+// DELETE /api/wellness/delete-all - Erase all health data (Right to Erasure)
+router.delete('/delete-all', (req, res) => {
+  try {
+    const result = db.deleteAllHealthData();
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to erase health records', details: err.message });
   }
 });
 

@@ -1,15 +1,19 @@
 import express from 'express';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
+import authRoutes from './routes/auth.js';
 import chatRoutes from './routes/chat.js';
 import notesRoutes from './routes/notes.js';
 import remindersRoutes from './routes/reminders.js';
 import settingsRoutes from './routes/settings.js';
 import profileRoutes from './routes/profile.js';
 import wellnessRoutes from './routes/wellness.js';
+import voiceRoutes from './routes/voice.js';
+import { requireAuth } from './middleware/auth.js';
 
 dotenv.config();
 
@@ -20,16 +24,23 @@ const app = express();
 const PORT = process.env.PORT || 5001;
 
 // Middlewares
-app.use(cors());
+app.use(cors({
+  origin: true,
+  credentials: true
+}));
+app.use(cookieParser());
 app.use(express.json({ limit: '10mb' }));
+app.use(requireAuth);
 
 // API Routes
+app.use('/api/auth', authRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/notes', notesRoutes);
 app.use('/api/reminders', remindersRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/wellness', wellnessRoutes);
+app.use('/api/voice', voiceRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

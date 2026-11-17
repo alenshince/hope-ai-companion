@@ -27,7 +27,9 @@ import {
   createAudioLevelMeter,
   createSpeechRecognizer,
   speakText,
-  stopSpeaking
+  stopSpeaking,
+  setPlaybackSpeed,
+  getPlaybackSpeed
 } from '../../utils/speech';
 import { api } from '../../api';
 
@@ -45,6 +47,8 @@ export default function VoiceAssistantModal({
   const [hopeResponse, setHopeResponse] = useState(null);
   const [handsFreeMode, setHandsFreeMode] = useState(true);
   const [autoSpeak, setAutoSpeak] = useState(true);
+  const [sttLanguage, setSttLanguage] = useState('en-IN'); // 'en-IN' | 'ml-IN'
+  const [playbackSpeed, setPlaybackSpeedState] = useState(1.0); // 0.75 | 1.0 | 1.25
   const [errorMessage, setErrorMessage] = useState('');
   const [liveLevel, setLiveLevel] = useState(0);
   const [hasMicPermission, setHasMicPermission] = useState(null);
@@ -112,6 +116,7 @@ export default function VoiceAssistantModal({
         continuous: true,
         interimResults: true,
         silenceTimeoutMs: 1800,
+        lang: sttLanguage,
         onStart: () => {
           isListeningRef.current = true;
           setVoiceState('listening');
@@ -194,10 +199,12 @@ export default function VoiceAssistantModal({
         if (addToast) addToast({ type: 'hope', title: 'Health Logged', message: res.reply });
       }
 
-      // Read aloud via SpeechSynthesis if enabled
+      // Read aloud via Neural TTS with female voice (ml-IN-SobhanaNeural / en-IN-NeerjaNeural)
       if (autoSpeakRef.current && res.spokenText) {
         setVoiceState('speaking');
         speakText(res.spokenText, {
+          rate: playbackSpeed,
+          language: sttLanguage === 'ml-IN' ? 'malayalam' : 'auto',
           onStart: () => setVoiceState('speaking'),
           onEnd: () => {
             setVoiceState('idle');
@@ -444,6 +451,60 @@ export default function VoiceAssistantModal({
                 </button>
               );
             })}
+          </div>
+        </div>
+
+        {/* Language & Voice Controls Bar */}
+        <div className="px-6 py-2.5 bg-slate-50/90 border-t border-slate-100 flex flex-wrap items-center justify-between text-xs text-slate-600 gap-3">
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-slate-500 text-[11px] uppercase tracking-wider">Mic Lang:</span>
+            <div className="flex bg-slate-200/80 p-0.5 rounded-lg text-[11px]">
+              <button
+                type="button"
+                onClick={() => {
+                  setSttLanguage('en-IN');
+                  if (recognizerRef.current) recognizerRef.current.setLanguage('en-IN');
+                }}
+                className={`px-2.5 py-1 rounded-md font-semibold transition-all ${
+                  sttLanguage === 'en-IN' ? 'bg-white text-hope-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                English (en-IN)
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSttLanguage('ml-IN');
+                  if (recognizerRef.current) recognizerRef.current.setLanguage('ml-IN');
+                }}
+                className={`px-2.5 py-1 rounded-md font-semibold transition-all ${
+                  sttLanguage === 'ml-IN' ? 'bg-white text-hope-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                മലയാളം (ml-IN)
+              </button>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-slate-500 text-[11px] uppercase tracking-wider">Voice Speed:</span>
+            <div className="flex bg-slate-200/80 p-0.5 rounded-lg text-[11px]">
+              {[0.75, 1.0, 1.25].map((speed) => (
+                <button
+                  key={speed}
+                  type="button"
+                  onClick={() => {
+                    setPlaybackSpeedState(speed);
+                    setPlaybackSpeed(speed);
+                  }}
+                  className={`px-2 py-0.5 rounded font-mono font-medium transition-all ${
+                    playbackSpeed === speed ? 'bg-white text-hope-700 shadow-sm font-bold' : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  {speed}x
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 

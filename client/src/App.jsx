@@ -260,6 +260,7 @@ export default function App() {
           {activeTab === 'research' && (
             <ResearchChat
               folders={folders}
+              settings={settings}
               onNoteCreated={handleNoteCreated}
               addToast={addToast}
               onNavigateToNotes={handleNavigateToNotes}

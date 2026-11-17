@@ -1,7 +1,8 @@
 /**
- * Hope Voice Engine: Web Speech API & Web Audio wrapper.
- * Provides resilient microphone capture, real-time speech recognition,
- * live audio visualizer stream analysis, and soothing vocal playback.
+ * Hope Voice Engine: Web Speech API & Cloud Neural TTS Wrapper.
+ * Provides resilient microphone capture (ml-IN, en-IN), speech recognition,
+ * neural female voice playback with automatic browser speech synthesis fallback,
+ * live audio visualizer stream analysis, and instant interrupt capability.
  */
 
 export function isSpeechRecognitionSupported() {
@@ -34,9 +35,9 @@ export async function requestMicrophoneAccess() {
     return stream;
   } catch (err) {
     if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-      throw new Error('Microphone permission was denied. Please allow microphone access in your browser address bar (lock/camera icon) to talk to Hope.');
+      throw new Error('Microphone permission was denied. Please click the lock or camera icon in your browser address bar and set Microphone to "Allow" to talk with Hope hands-free.');
     } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
-      throw new Error('No microphone device was detected on your system. Please plug in a microphone.');
+      throw new Error('No microphone device was detected on your system. Please plug in or connect a microphone.');
     } else {
       throw new Error(`Microphone access error: ${err.message || err.name}`);
     }
@@ -106,7 +107,7 @@ export function createAudioLevelMeter(stream, onLevel) {
 
 /**
  * Creates a robust Speech Recognition controller with continuous listening,
- * full transcript accumulation, and intelligent silence finalization.
+ * full transcript accumulation, language selection (ml-IN / en-IN), and silence finalization.
  */
 export function createSpeechRecognizer({
   onResult,
@@ -117,10 +118,10 @@ export function createSpeechRecognizer({
   continuous = true,
   interimResults = true,
   silenceTimeoutMs = 1800,
-  lang = 'en-US'
+  lang = 'en-IN' // Supports 'en-IN' and 'ml-IN'
 } = {}) {
   if (!isSpeechRecognitionSupported()) {
-    throw new Error('Speech Recognition is not supported by your current browser. Please try Google Chrome, Microsoft Edge, or a Chromium browser.');
+    throw new Error('Speech Recognition is not supported by your current browser. Please try Google Chrome or Microsoft Edge.');
   }
 
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -198,7 +199,6 @@ export function createSpeechRecognizer({
   };
 
   recognition.onerror = (event) => {
-    // Ignore benign no-speech or aborted events
     if (event.error === 'no-speech' || event.error === 'aborted') {
       return;
     }
@@ -208,7 +208,7 @@ export function createSpeechRecognizer({
 
     let friendly = `Speech error: ${event.error}`;
     if (event.error === 'not-allowed') {
-      friendly = 'Microphone permission denied. Please allow microphone access in your browser.';
+      friendly = 'Microphone permission denied. Please allow microphone access in your browser address bar.';
     } else if (event.error === 'network') {
       friendly = 'Speech recognition network connection interrupted. Please try again.';
     } else if (event.error === 'audio-capture') {
@@ -221,7 +221,6 @@ export function createSpeechRecognizer({
   recognition.onend = () => {
     clearSilence();
     const textToSubmit = (fullAccumulated + ' ' + currentInterim).trim();
-    // If user spoke something and complete hasn't been fired yet, fire it now
     if (textToSubmit.length > 0 && !hasTriggeredComplete) {
       hasTriggeredComplete = true;
       if (onSpeechComplete) {
@@ -232,12 +231,14 @@ export function createSpeechRecognizer({
   };
 
   return {
+    setLanguage: (newLang) => {
+      recognition.lang = newLang;
+    },
     start: () => {
       hasTriggeredComplete = false;
       try {
         recognition.start();
       } catch (err) {
-        // Recognition might already be running
         if (err.name !== 'InvalidStateError') {
           throw err;
         }
@@ -274,7 +275,7 @@ export function createSpeechRecognizer({
 }
 
 /**
- * Clean markdown symbols for natural vocal playback
+ * Clean markdown symbols for natural vocal playback fallback
  */
 export function cleanTextForSpeech(text) {
   if (!text) return '';
@@ -283,6 +284,7 @@ export function cleanTextForSpeech(text) {
     .replace(/`([^`]+)`/g, '$1')
     .replace(/!\[([^\]]*)\]\([^)]*\)/g, '')
     .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+    .replace(/https?:\/\/[^\s)]+/g, '')
     .replace(/#{1,6}\s+/g, '')
     .replace(/(\*\*|__)(.*?)\1/g, '$2')
     .replace(/(\*|_)(.*?)\1/g, '$2')
@@ -295,40 +297,83 @@ export function cleanTextForSpeech(text) {
 }
 
 /**
- * Speaks text using SpeechSynthesis with warm, calming cadence.
+ * Active playback tracking for immediate interruption
  */
+let activeAudioElement = null;
 let activeUtterance = null;
+let activeAudioBlobUrl = null;
+let currentSpeakingRate = 1.0;
 
-export function speakText(rawText, {
-  onStart,
-  onEnd,
-  onError,
-  rate = 0.95,
-  pitch = 1.0,
-  volume = 1.0
-} = {}) {
+export function setPlaybackSpeed(rate) {
+  currentSpeakingRate = Number(rate) || 1.0;
+  if (activeAudioElement) {
+    activeAudioElement.playbackRate = currentSpeakingRate;
+  }
+}
+
+export function getPlaybackSpeed() {
+  return currentSpeakingRate;
+}
+
+/**
+ * Immediately halts any currently playing audio or browser utterance.
+ */
+export function stopSpeaking() {
+  if (activeAudioElement) {
+    activeAudioElement.pause();
+    activeAudioElement.currentTime = 0;
+    activeAudioElement = null;
+  }
+  if (activeAudioBlobUrl) {
+    URL.revokeObjectURL(activeAudioBlobUrl);
+    activeAudioBlobUrl = null;
+  }
+  if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+    window.speechSynthesis.cancel();
+  }
+  activeUtterance = null;
+}
+
+export function isSpeaking() {
+  const isAudioPlaying = activeAudioElement && !activeAudioElement.paused && !activeAudioElement.ended;
+  const isSynthSpeaking = typeof window !== 'undefined' && 'speechSynthesis' in window && window.speechSynthesis.speaking;
+  return Boolean(isAudioPlaying || isSynthSpeaking);
+}
+
+/**
+ * Fallback to browser SpeechSynthesis API
+ */
+function speakViaWebSpeech(rawText, { onStart, onEnd, onError, rate = 1.0 } = {}) {
   if (!isSpeechSynthesisSupported()) {
     console.warn('SpeechSynthesis is not supported.');
+    if (onEnd) onEnd();
     return null;
   }
 
-  // Cancel prior speech
-  stopSpeaking();
-
   const clean = cleanTextForSpeech(rawText);
-  if (!clean) return null;
+  if (!clean) {
+    if (onEnd) onEnd();
+    return null;
+  }
 
   const utterance = new SpeechSynthesisUtterance(clean);
   utterance.rate = rate;
-  utterance.pitch = pitch;
-  utterance.volume = volume;
+  utterance.pitch = 1.0;
+  utterance.volume = 1.0;
+
+  const isMalayalam = /[\u0D00-\u0D7F]/.test(clean);
 
   const getBestVoice = () => {
     const voices = window.speechSynthesis.getVoices();
-    return voices.find(v => 
-      (v.name.includes('Natural') || v.name.includes('Neural') || v.name.includes('Google') || v.name.includes('Samantha') || v.name.includes('Karen')) &&
-      v.lang.startsWith('en')
-    ) || voices.find(v => v.lang.startsWith('en')) || voices[0];
+    if (isMalayalam) {
+      const mlVoice = voices.find(v => v.lang.startsWith('ml') || v.name.toLowerCase().includes('malayalam'));
+      if (mlVoice) return mlVoice;
+    }
+    // Search for Indian English or natural female voice
+    return voices.find(v => v.lang === 'en-IN') ||
+           voices.find(v => (v.name.includes('Natural') || v.name.includes('Neural') || v.name.includes('Samantha') || v.name.includes('Google')) && v.lang.startsWith('en')) ||
+           voices.find(v => v.lang.startsWith('en')) ||
+           voices[0];
   };
 
   const voice = getBestVoice();
@@ -353,14 +398,68 @@ export function speakText(rawText, {
   return utterance;
 }
 
-export function stopSpeaking() {
-  if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-    window.speechSynthesis.cancel();
-  }
-  activeUtterance = null;
-}
+/**
+ * Speaks text using Hope Neural Cloud Voice (Edge TTS with ml-IN-SobhanaNeural & en-IN-NeerjaNeural)
+ * with graceful fallback to browser Web Speech API.
+ */
+export async function speakText(rawText, {
+  onStart,
+  onEnd,
+  onError,
+  rate = currentSpeakingRate,
+  language = 'auto'
+} = {}) {
+  // 1. Immediately cancel any ongoing speech
+  stopSpeaking();
 
-export function isSpeaking() {
-  if (typeof window === 'undefined' || !('speechSynthesis' in window)) return false;
-  return window.speechSynthesis.speaking;
+  if (!rawText || !rawText.trim()) {
+    if (onEnd) onEnd();
+    return;
+  }
+
+  // 2. Try primary neural cloud voice endpoint (/api/voice/tts)
+  try {
+    const res = await fetch('/api/voice/tts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        text: rawText,
+        language,
+        speed: rate
+      })
+    });
+
+    if (!res.ok) {
+      throw new Error(`Cloud TTS returned status ${res.status}`);
+    }
+
+    const audioBlob = await res.blob();
+    const blobUrl = URL.createObjectURL(audioBlob);
+    activeAudioBlobUrl = blobUrl;
+
+    const audio = new Audio(blobUrl);
+    audio.playbackRate = rate;
+    activeAudioElement = audio;
+
+    audio.onplay = () => {
+      if (onStart) onStart();
+    };
+
+    audio.onended = () => {
+      stopSpeaking();
+      if (onEnd) onEnd();
+    };
+
+    audio.onerror = (e) => {
+      console.warn('Audio playback error, falling back to Web Speech API:', e);
+      stopSpeaking();
+      speakViaWebSpeech(rawText, { onStart, onEnd, onError, rate });
+    };
+
+    await audio.play();
+    return audio;
+  } catch (err) {
+    console.warn('Neural TTS failed, falling back to Web Speech API:', err.message);
+    return speakViaWebSpeech(rawText, { onStart, onEnd, onError, rate });
+  }
 }

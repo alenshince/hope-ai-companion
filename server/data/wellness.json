@@ -1,36 +1,36 @@
 {
-  "date": "2026-11-13",
-  "waterGlasses": 6,
+  "date": "2026-11-17",
+  "waterGlasses": 0,
   "targetWaterGlasses": 8,
   "meals": {
     "breakfast": {
       "logged": true,
-      "time": "08:45 AM",
-      "note": "Oatmeal, fruits & nuts"
-    },
-    "lunch": {
-      "logged": true,
-      "time": "01:15 PM",
-      "note": "Balanced meal & veggies"
-    },
-    "dinner": {
-      "logged": true,
-      "time": "09:08 PM",
+      "time": "08:21 AM",
       "note": {
         "note": ""
       }
+    },
+    "lunch": {
+      "logged": false,
+      "time": null,
+      "note": ""
+    },
+    "dinner": {
+      "logged": false,
+      "time": null,
+      "note": ""
     }
   },
-  "workMinutes": 195,
-  "breaksTaken": 6,
-  "lastBreakAt": "2026-11-13T15:18:39.556Z",
+  "workMinutes": 0,
+  "breaksTaken": 0,
+  "lastBreakAt": null,
   "mood": {
-    "rating": "focused",
-    "label": "Deeply Focused",
+    "rating": "energized",
+    "label": "Energized & Motivated",
     "note": "",
-    "loggedAt": "2026-11-13T15:38:24.164Z"
+    "loggedAt": "2026-11-17T02:51:40.795Z"
   },
-  "streakDays": 6,
+  "streakDays": 8,
   "consistencyScore": 92,
   "settings": {
     "mealRemindersEnabled": true,
@@ -46,124 +46,10 @@
   },
   "checkInLogs": [
     {
-      "id": "check-1794584280636",
+      "id": "check-1794883883732",
       "type": "meal",
-      "message": "Nourished: Dinner logged at 09:08 PM",
-      "timestamp": "2026-11-13T15:38:00.636Z"
-    },
-    {
-      "id": "check-1794583196700",
-      "type": "water",
-      "message": "Logged 1 glass(es) of water (6/8)",
-      "timestamp": "2026-11-13T15:19:56.700Z"
-    },
-    {
-      "id": "check-1794583119556",
-      "type": "break",
-      "message": "Took a refreshing break to stretch and rest eyes (20-20-20 rule)",
-      "timestamp": "2026-11-13T15:18:39.558Z"
-    },
-    {
-      "id": "check-1794582733311",
-      "type": "water",
-      "message": "Decreased water log to 5",
-      "timestamp": "2026-11-13T15:12:13.311Z"
-    },
-    {
-      "id": "check-1794582733306",
-      "type": "water",
-      "message": "Logged 1 glass(es) of water (6/8)",
-      "timestamp": "2026-11-13T15:12:13.306Z"
-    },
-    {
-      "id": "check-1794582733240",
-      "type": "break",
-      "message": "Took a refreshing break to stretch and rest eyes (20-20-20 rule)",
-      "timestamp": "2026-11-13T15:12:13.240Z"
-    },
-    {
-      "id": "check-1794582733236",
-      "type": "water",
-      "message": "Decreased water log to 5",
-      "timestamp": "2026-11-13T15:12:13.236Z"
-    },
-    {
-      "id": "check-1794582733231",
-      "type": "water",
-      "message": "Logged 1 glass(es) of water (6/8)",
-      "timestamp": "2026-11-13T15:12:13.231Z"
-    },
-    {
-      "id": "check-1794582183440",
-      "type": "water",
-      "message": "Decreased water log to 5",
-      "timestamp": "2026-11-13T15:03:03.440Z"
-    },
-    {
-      "id": "check-1794582183437",
-      "type": "water",
-      "message": "Logged 1 glass(es) of water (6/8)",
-      "timestamp": "2026-11-13T15:03:03.437Z"
-    },
-    {
-      "id": "check-1794582183374",
-      "type": "break",
-      "message": "Took a refreshing break to stretch and rest eyes (20-20-20 rule)",
-      "timestamp": "2026-11-13T15:03:03.374Z"
-    },
-    {
-      "id": "check-1794582183369",
-      "type": "water",
-      "message": "Decreased water log to 5",
-      "timestamp": "2026-11-13T15:03:03.369Z"
-    },
-    {
-      "id": "check-1794582183364",
-      "type": "water",
-      "message": "Logged 1 glass(es) of water (6/8)",
-      "timestamp": "2026-11-13T15:03:03.364Z"
-    },
-    {
-      "id": "check-1794582085036",
-      "type": "water",
-      "message": "Decreased water log to 5",
-      "timestamp": "2026-11-13T15:01:25.036Z"
-    },
-    {
-      "id": "check-1794582085026",
-      "type": "water",
-      "message": "Logged 1 glass(es) of water (6/8)",
-      "timestamp": "2026-11-13T15:01:25.026Z"
-    },
-    {
-      "id": "check-1794582084903",
-      "type": "break",
-      "message": "Took a refreshing break to stretch and rest eyes (20-20-20 rule)",
-      "timestamp": "2026-11-13T15:01:24.903Z"
-    },
-    {
-      "id": "check-1794582084896",
-      "type": "water",
-      "message": "Decreased water log to 5",
-      "timestamp": "2026-11-13T15:01:24.896Z"
-    },
-    {
-      "id": "check-1794582084890",
-      "type": "water",
-      "message": "Logged 1 glass(es) of water (6/8)",
-      "timestamp": "2026-11-13T15:01:24.891Z"
-    },
-    {
-      "id": "check-1794580650680",
-      "type": "water",
-      "message": "Decreased water log to 5",
-      "timestamp": "2026-11-13T14:37:30.680Z"
-    },
-    {
-      "id": "check-1794580650674",
-      "type": "water",
-      "message": "Logged 1 glass(es) of water (6/8)",
-      "timestamp": "2026-11-13T14:37:30.674Z"
+      "message": "Nourished: Breakfast logged at 08:21 AM",
+      "timestamp": "2026-11-17T02:51:23.732Z"
     }
   ]
 }
